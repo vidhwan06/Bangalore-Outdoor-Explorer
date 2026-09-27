@@ -563,7 +563,7 @@ async function main() {
 
   for (const sourceData of officialSources) {
     await prisma.officialSource.upsert({
-      where: { id: sourceData.name }, // Using name as unique identifier for demo
+      where: { name: sourceData.name },
       update: {},
       create: sourceData,
     });

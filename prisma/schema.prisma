@@ -230,7 +230,7 @@ model PlaceVideo {
 model OfficialSource {
   id              String   @id @default(cuid())
   placeId         String?
-  name            String   // "Karnataka Forest Department", "Bengaluru Tourism", etc.
+  name            String   @unique // "Karnataka Forest Department", "Bengaluru Tourism", etc.
   type            VerificationSourceType
   url             String?
   contactEmail    String?
