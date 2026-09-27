@@ -1,0 +1,248 @@
+// Database configuration
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum PlaceCategory {
+  TREK
+  HIKE
+  WATERFALL
+  LAKE
+  MOUNTAIN
+  FOREST
+  CAVE
+  FORT
+  VIEWPOINT
+  CAMPING
+  CYCLING
+  SCENIC_DRIVE
+  HIDDEN_GEM
+}
+
+enum PlaceStatus {
+  OPEN
+  PERMIT_REQUIRED
+  LIMITED_SLOTS
+  CLOSED
+  WEATHER_CONCERN
+  UNVERIFIED
+}
+
+enum VisibilityLevel {
+  PUBLIC_EXACT
+  PUBLIC_APPROXIMATE
+  VERIFIED_COMMUNITY_ONLY
+  MODERATOR_ONLY
+  PRIVATE
+}
+
+enum TrustLevel {
+  VERIFIED
+  COMMUNITY_SUBMITTED
+  INFORMATION_OUTDATED
+  CLOSED_RESTRICTED
+  UNDER_REVIEW
+}
+
+enum VerificationSourceType {
+  OFFICIAL_GOVERNMENT
+  OFFICIAL_PARK_AUTHORITY
+  OFFICIAL_TOURISM_BOARD
+  VERIFIED_CONTRIBUTOR
+  COMMUNITY_REPORT
+  SATELLITE_IMAGERY
+  USER_VISIT
+  THIRD_PARTY_API
+}
+
+enum UserRole {
+  USER
+  CONTRIBUTOR
+  MODERATOR
+  ADMIN
+}
+
+// ============================================
+// CORE TABLES
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatarUrl     String?
+  role          UserRole  @default(USER)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations - Phase 0 only
+  profile       Profile?
+  createdPlaces Place[]   @relation("PlaceCreator")
+
+  @@index([email])
+  @@index([role])
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  bio             String?
+  location        String?
+  website         String?
+  preferences     Json?    // User preferences for recommendations
+  totalVisits     Int      @default(0)
+  totalContributions Int   @default(0)
+  trustScore      Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// PLACES - Core destination entity (Phase 0)
+// ============================================
+
+model Place {
+  id                  String         @id @default(cuid())
+  name                String
+  slug                String         @unique
+  description         String?
+  shortDescription    String?        // For cards/list views
+
+  // Classification
+  category            PlaceCategory
+  subcategory         String?
+
+  // Geography - PostGIS geography point (authoritative)
+  // latitude/longitude are NOT stored as separate columns to avoid dual-write inconsistency.
+  // Application reads lat/lng from the geography point via ST_X/ST_Y or Prisma raw queries.
+  location            Unsupported("geography(Point, 4326)")
+  region              String?        // e.g., "Bengaluru Urban", "Ramanagara"
+  locality            String?        // e.g., "Nandi Hills", "Savandurga"
+
+  // Activity info
+  difficulty          Int?           // 1-5 scale
+  trailDistanceKm     Float?         // Total trail distance in km
+  durationHours       Float?         // Typical duration in hours
+  elevationM          Int?           // Peak elevation in meters
+  elevationGainM      Int?           // Total elevation gain in meters
+
+  // Access info
+  openingTime         String?        // HH:MM format
+  closingTime         String?        // HH:MM format
+  lastEntryTime       String?        // HH:MM format
+  entryFeeInr         Int?           // Entry fee in INR
+  permitRequired      Boolean        @default(false)
+  permitDetails       String?        // Details about permit process
+  permitUrl           String?        // URL for permit application
+
+  // Facilities
+  hasParking          Boolean        @default(false)
+  parkingDetails      String?
+  hasWater            Boolean        @default(false)
+  waterDetails        String?
+  hasNetwork          Boolean        @default(false)
+  networkDetails      String?
+
+  // Discovery
+  crowdLevel          Int?           // 1-5 scale (1=empty, 5=crowded)
+  bestSeasonStart     Int?           // Month 1-12
+  bestSeasonEnd       Int?           // Month 1-12
+  status              PlaceStatus    @default(UNVERIFIED)
+
+  // Trust & Verification
+  trustScore          Float          @default(0)      // 0-100
+  trustLevel          TrustLevel     @default(COMMUNITY_SUBMITTED)
+  visibilityLevel     VisibilityLevel @default(PUBLIC_EXACT)
+  lastVerifiedAt      DateTime?
+  verificationNotes   String?
+
+  // Metadata
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  createdById         String?
+  sourceReferences    Json?          // Array of source references
+
+  // Relations - Phase 0 only
+  createdBy           User?          @relation("PlaceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  photos              PlacePhoto[]
+  videos              PlaceVideo[]
+  officialSources     OfficialSource[]
+
+  @@index([category])
+  @@index([status])
+  @@index([trustLevel])
+  @@index([visibilityLevel])
+  @@index([region])
+  @@index([locality])
+  @@index([slug])
+  // PostGIS spatial index created via raw SQL migration
+}
+
+model PlacePhoto {
+  id             String   @id @default(cuid())
+  placeId        String
+  url            String
+  thumbnailUrl   String?
+  caption        String?
+  photographerId String?
+  isPrimary      Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([placeId])
+  @@index([isPrimary])
+}
+
+model PlaceVideo {
+  id           String   @id @default(cuid())
+  placeId      String
+  url          String
+  thumbnailUrl String?
+  caption      String?
+  duration     Int?     // Seconds
+  createdAt    DateTime @default(now())
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([placeId])
+}
+
+// ============================================
+// OFFICIAL SOURCES
+// ============================================
+
+model OfficialSource {
+  id              String   @id @default(cuid())
+  placeId         String?
+  name            String   // "Karnataka Forest Department", "Bengaluru Tourism", etc.
+  type            VerificationSourceType
+  url             String?
+  contactEmail    String?
+  contactPhone    String?
+  description     String?
+  isVerified      Boolean  @default(false)
+  lastCheckedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  place Place? @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  @@index([placeId])
+  @@index([type])
+}

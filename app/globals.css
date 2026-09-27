@@ -1,0 +1,318 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 4%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 355 7% 97%;
+    --secondary: 60 4.8% 95.9%;
+    --secondary-foreground: 24 9.8% 10%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --accent: 60 4.8% 95.9%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 142 76% 36%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 20 14% 4%;
+    --foreground: 60 9.1% 97.8%;
+    --card: 20 14% 4%;
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 20 14% 4%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 355 7% 97%;
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 142 76% 36%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-800;
+  }
+  body {
+    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: animate-in 0.3s ease-out forwards;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Map container styles */
+.map-container {
+  @apply relative h-full w-full;
+}
+
+.map-container .mapboxgl-map {
+  @apply rounded-lg;
+}
+
+.map-container .mapboxgl-ctrl-bottom-right {
+  @apply hidden;
+}
+
+/* Leaflet map overrides */
+.leaflet-container {
+  @apply font-sans;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply rounded-lg shadow-lg;
+}
+
+.leaflet-popup-content {
+  @apply m-0 p-2;
+}
+
+/* Focus styles */
+.focus-visible-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse rounded bg-gray-200 dark:bg-gray-700;
+}
+
+/* Button variants */
+.btn {
+  @apply focus-visible-ring inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50;
+}
+
+.btn-primary {
+  @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+}
+
+.btn-secondary {
+  @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 dark:active:bg-gray-600;
+}
+
+.btn-outline {
+  @apply btn border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800 dark:active:bg-gray-700;
+}
+
+.btn-ghost {
+  @apply btn bg-transparent hover:bg-gray-100 active:bg-gray-200 dark:hover:bg-gray-800 dark:active:bg-gray-700;
+}
+
+.btn-destructive {
+  @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+}
+
+/* Card variants */
+.card {
+  @apply rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100;
+}
+
+.card-interactive {
+  @apply card cursor-pointer;
+}
+
+/* Input variants */
+.input {
+  @apply focus-visible-ring flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100;
+}
+
+.input-error {
+  @apply input border-red-500 focus-visible:ring-red-500;
+}
+
+/* Badge variants */
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors;
+}
+
+.badge-primary {
+  @apply badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400;
+}
+
+.badge-secondary {
+  @apply badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300;
+}
+
+.badge-success {
+  @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+}
+
+.badge-warning {
+  @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
+}
+
+.badge-destructive {
+  @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+}
+
+.badge-outline {
+  @apply badge border border-gray-300 dark:border-gray-700;
+}
+
+/* Difficulty badges */
+.difficulty-1 {
+  @apply badge-success;
+}
+.difficulty-2 {
+  @apply badge-success;
+}
+.difficulty-3 {
+  @apply badge-warning;
+}
+.difficulty-4 {
+  @apply badge-destructive;
+}
+.difficulty-5 {
+  @apply badge-destructive;
+}
+
+/* Status badges */
+.status-open {
+  @apply badge-success;
+}
+.status-permit_required {
+  @apply badge-warning;
+}
+.status-limited_slots {
+  @apply badge-warning;
+}
+.status-closed {
+  @apply badge-destructive;
+}
+.status-weather_concern {
+  @apply badge-destructive;
+}
+.status-unverified {
+  @apply badge-outline;
+}
+
+/* Trust level badges */
+.trust-verified {
+  @apply badge-success;
+}
+.trust-community_submitted {
+  @apply badge-outline;
+}
+.trust-information_outdated {
+  @apply badge-warning;
+}
+.trust-closed_restricted {
+  @apply badge-destructive;
+}
+.trust-under_review {
+  @apply badge-warning;
+}
+
+/* Category colors for map markers */
+.category-trek {
+  --marker-color: #16a34a;
+}
+.category-hike {
+  --marker-color: #22c55e;
+}
+.category-waterfall {
+  --marker-color: #06b6d4;
+}
+.category-lake {
+  --marker-color: #3b82f6;
+}
+.category-mountain {
+  --marker-color: #78716c;
+}
+.category-forest {
+  --marker-color: #15803d;
+}
+.category-cave {
+  --marker-color: #78716c;
+}
+.category-fort {
+  --marker-color: #b45309;
+}
+.category-viewpoint {
+  --marker-color: #eab308;
+}
+.category-camping {
+  --marker-color: #f97316;
+}
+.category-cycling {
+  --marker-color: #8b5cf6;
+}
+.category-scenic_drive {
+  --marker-color: #ec4899;
+}
+.category-hidden_gem {
+  --marker-color: #a855f7;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .map-container {
+    page-break-inside: avoid;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
