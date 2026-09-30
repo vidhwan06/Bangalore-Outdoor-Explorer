@@ -6,20 +6,12 @@ const createJestConfig = nextJest({
 });
 
 const config: Config = {
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node', // Changed to node by default for database tests
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
   testMatch: ['**/tests/**/*.test.{ts,tsx}'],
-  transform: {
-    '^.+\\.(ts|tsx)$': [
-      'ts-jest',
-      {
-        tsconfig: 'tsconfig.json',
-      },
-    ],
-  },
   collectCoverageFrom: [
     'lib/**/*.{ts,tsx}',
     'features/**/*.{ts,tsx}',

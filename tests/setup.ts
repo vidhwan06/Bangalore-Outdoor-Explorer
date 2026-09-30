@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
 // Mock next/image - simple mock that returns a string to avoid JSX parsing issues
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: React.IMGHTMLAttributes<HTMLImageElement>) => {
+  default: (props) => {
     return `mock-image-${props.src || 'unknown'}`;
   },
 }));
