@@ -23,6 +23,14 @@ export interface DiscoveryResultsProps {
   /** Called when a result card is selected (maps to the marker). */
   onSelectPlace?: (id: string) => void;
   onRetry: () => void;
+  /** Whether there are more viewport results to load. */
+  viewportHasMore?: boolean;
+  /** Current viewport pagination offset (number of items already shown). */
+  viewportOffset?: number;
+  /** Whether a load-more request is in flight. */
+  viewportLoading?: boolean;
+  /** Called to load the next page of viewport results. */
+  onLoadMoreViewport?: () => void;
 }
 
 function SkeletonCard() {
@@ -132,8 +140,13 @@ export function DiscoveryResults({
   selectedPlaceId = null,
   onSelectPlace,
   onRetry,
+  viewportHasMore = false,
+  viewportOffset = 0,
+  viewportLoading = false,
+  onLoadMoreViewport,
 }: DiscoveryResultsProps) {
   const count = totalCount ?? places.length;
+  const showingCount = mode === 'bounds' ? places.length : count;
 
   return (
     <section aria-label="Search results" aria-live="polite" className="min-w-0">
@@ -158,7 +171,7 @@ export function DiscoveryResults({
             {count > places.length && (
               <p className="text-sm text-surface-500 dark:text-surface-400">
                 {mode === 'bounds'
-                  ? `Showing ${places.length} of ${count}`
+                  ? `Showing ${showingCount} of ${count}`
                   : `Showing the ${places.length} closest`}
               </p>
             )}
@@ -177,6 +190,46 @@ export function DiscoveryResults({
               </li>
             ))}
           </ul>
+
+          {mode === 'bounds' && viewportHasMore && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={onLoadMoreViewport}
+                disabled={viewportLoading}
+                className="btn-secondary flex items-center gap-2"
+                aria-busy={viewportLoading ? 'true' : undefined}
+              >
+                {viewportLoading ? (
+                  <>
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Loading more…
+                  </>
+                ) : (
+                  'Load more'
+                )}
+              </button>
+            </div>
+          )}
         </>
       )}
     </section>

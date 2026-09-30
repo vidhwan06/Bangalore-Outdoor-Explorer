@@ -55,6 +55,7 @@ export interface PaginatedResult<T> {
     limit: number;
     offset: number;
     count: number;
+    hasMore: boolean;
   };
 }
 
@@ -180,6 +181,7 @@ export async function findNearbyPlaces(
       limit,
       offset,
       count: total,
+      hasMore: offset + limit < total,
     },
   };
 }
@@ -240,6 +242,7 @@ export async function findPlacesInBounds(
       limit,
       offset,
       count: total,
+      hasMore: offset + limit < total,
     },
   };
 }

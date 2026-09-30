@@ -60,7 +60,7 @@ describe('GET /api/places/bounds', () => {
     const body = await response.json();
 
     expect(nearbyPlacesResponseSchema.safeParse(body).success).toBe(true);
-    expect(body.pagination).toEqual({ limit: 20, offset: 0, count: 3 });
+    expect(body.pagination).toEqual({ limit: 20, offset: 0, count: 3, hasMore: false });
     expect(body.data[0]).toMatchObject({ name: 'Test Peak', visibilityLevel: 'PUBLIC_EXACT' });
   });
 

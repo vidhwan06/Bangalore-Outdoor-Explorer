@@ -25,8 +25,17 @@ export function makeNearbyResponse(
   places: NearbyPlace[],
   pagination: Partial<NearbyPlacesResponse['pagination']> = {}
 ): NearbyPlacesResponse {
+  const limit = pagination.limit ?? 20;
+  const offset = pagination.offset ?? 0;
+  const count = pagination.count ?? places.length;
   return {
     data: places,
-    pagination: { limit: 20, offset: 0, count: places.length, ...pagination },
+    pagination: {
+      limit,
+      offset,
+      count,
+      hasMore: pagination.hasMore ?? (offset + limit < count),
+      ...pagination,
+    },
   };
 }

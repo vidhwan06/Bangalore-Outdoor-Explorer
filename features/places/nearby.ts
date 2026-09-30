@@ -42,6 +42,7 @@ export const nearbyPlacesResponseSchema = z.object({
     limit: z.number(),
     offset: z.number(),
     count: z.number(),
+    hasMore: z.boolean(),
   }),
 });
 

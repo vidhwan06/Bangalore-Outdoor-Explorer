@@ -97,10 +97,20 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   // Viewport (bounds) discovery: debounce, aborts and stale-response
   // protection live in features/places/use-viewport-search — not in the map.
   const handleViewportResults = useCallback(
-    (response: NearbyPlacesResponse) => {
+    (response: NearbyPlacesResponse, isLoadMore: boolean) => {
       // Claim the latest intent — any radius search still in flight is older.
       resultsSequenceRef.current += 1;
-      applyResults(response, 'bounds');
+      if (isLoadMore) {
+        // Append new results to existing places
+        setPlaces((prev) => [...prev, ...response.data]);
+        setTotalCount(response.pagination.count);
+        setStatus('success');
+        setResultMode('bounds');
+        setSelectedPlaceId(null);
+      } else {
+        // New viewport search: replace results
+        applyResults(response, 'bounds');
+      }
     },
     [applyResults]
   );
@@ -109,7 +119,11 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   const {
     status: viewportStatus,
     errorMessage: viewportErrorMessage,
+    offset: viewportOffset,
+    hasMore: viewportHasMore,
+    totalCount: viewportTotalCount,
     schedule: scheduleViewportSearch,
+    loadMore: loadMoreViewport,
     retry: retryViewportSearch,
     cancel: cancelViewportSearch,
   } = viewportSearch;
@@ -237,7 +251,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
           <DiscoveryResults
             status={status}
             places={places}
-            totalCount={totalCount}
+            totalCount={resultMode === 'bounds' ? viewportTotalCount : totalCount}
             radiusMeters={values.radiusMeters}
             origin={searchOrigin}
             errorMessage={errorMessage}
@@ -245,6 +259,10 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
             selectedPlaceId={selectedPlaceId}
             onSelectPlace={setSelectedPlaceId}
             onRetry={runSearch}
+            viewportHasMore={resultMode === 'bounds' ? viewportHasMore : false}
+            viewportOffset={resultMode === 'bounds' ? viewportOffset : 0}
+            viewportLoading={viewportStatus === 'loading_more'}
+            onLoadMoreViewport={resultMode === 'bounds' ? loadMoreViewport : undefined}
           />
 
           <aside aria-label="Map" className="hidden lg:block">

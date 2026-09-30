@@ -42,6 +42,7 @@ export interface NearbySearchOutput {
     limit: number;
     offset: number;
     count: number;
+    hasMore: boolean;
   };
 }
 
