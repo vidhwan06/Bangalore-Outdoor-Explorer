@@ -168,4 +168,14 @@ describe('ExploreDiscovery', () => {
     expect(screen.getByLabelText('Category')).toBeEnabled();
     expect(screen.getByRole('button', { name: /search places/i })).toBeEnabled();
   });
+
+  it('links each result to its details page with the search origin', async () => {
+    mockFetch.mockResolvedValue(okResponse(makeNearbyResponse([makeNearbyPlace()])));
+
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    const link = await screen.findByRole('link', { name: 'Test Peak' });
+    expect(link).toHaveAttribute('href', '/places/test-peak?lat=12.9716&lng=77.5946');
+  });
 });

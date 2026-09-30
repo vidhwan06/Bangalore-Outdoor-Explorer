@@ -3,7 +3,7 @@
 
 import { formatRadius } from '@/features/places/discovery';
 import type { NearbyPlace } from '@/features/places/nearby';
-import { NearbyPlaceCard } from './NearbyPlaceCard';
+import { NearbyPlaceCard, type DiscoveryOrigin } from './NearbyPlaceCard';
 
 export type DiscoveryStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -13,6 +13,8 @@ export interface DiscoveryResultsProps {
   /** Total matches reported by the API (may exceed places.length). */
   totalCount: number | null;
   radiusMeters: number;
+  /** Last successful search origin — carried into place detail links. */
+  origin?: DiscoveryOrigin | null;
   errorMessage?: string | null;
   onRetry: () => void;
 }
@@ -117,6 +119,7 @@ export function DiscoveryResults({
   places,
   totalCount,
   radiusMeters,
+  origin,
   errorMessage,
   onRetry,
 }: DiscoveryResultsProps) {
@@ -144,7 +147,7 @@ export function DiscoveryResults({
           <ul className="grid gap-4 sm:grid-cols-2">
             {places.map((place) => (
               <li key={place.id}>
-                <NearbyPlaceCard place={place} />
+                <NearbyPlaceCard place={place} origin={origin} />
               </li>
             ))}
           </ul>

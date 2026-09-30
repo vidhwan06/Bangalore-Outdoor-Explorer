@@ -10,6 +10,7 @@ import {
   type BoundsParams,
   type PaginatedResult,
   type PlaceResult,
+  type PlaceDetailResult,
 } from './repositories';
 
 export interface NearbySearchInput {
@@ -116,9 +117,9 @@ export const placeService = {
   },
 
   /**
-   * Get a single place by slug
+   * Get a single place by slug (detail shape: description + sources)
    */
-  async getBySlug(slug: string): Promise<PlaceResult | null> {
+  async getBySlug(slug: string): Promise<PlaceDetailResult | null> {
     return findPlaceBySlug(slug);
   },
 };

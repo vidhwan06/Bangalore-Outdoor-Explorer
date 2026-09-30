@@ -1,6 +1,8 @@
 // Place card for discovery results.
-// Renders only fields the /api/places/nearby endpoint actually returns.
+// Renders only fields the /api/places/nearby endpoint actually returns
+// and links each result to its details page.
 
+import Link from 'next/link';
 import { cn, formatDistance } from '@/lib/utils';
 import {
   DIFFICULTY_LABELS,
@@ -43,7 +45,28 @@ const TRUST_CLASSES: Record<NearbyPlace['trustLevel'], string> = {
   UNDER_REVIEW: 'trust-under_review',
 };
 
-export function NearbyPlaceCard({ place }: { place: NearbyPlace }) {
+/** Discovery search origin — carried into the details page for distance context. */
+export interface DiscoveryOrigin {
+  lat: number;
+  lng: number;
+}
+
+/** Builds the details-page href for a search result. */
+export function buildPlaceHref(slug: string, origin?: DiscoveryOrigin | null): string {
+  const base = `/places/${slug}`;
+  if (!origin) return base;
+  const params = new URLSearchParams();
+  params.set('lat', String(origin.lat));
+  params.set('lng', String(origin.lng));
+  return `${base}?${params.toString()}`;
+}
+
+export interface NearbyPlaceCardProps {
+  place: NearbyPlace;
+  origin?: DiscoveryOrigin | null;
+}
+
+export function NearbyPlaceCard({ place, origin }: NearbyPlaceCardProps) {
   const approximate = place.visibilityLevel === 'PUBLIC_APPROXIMATE';
 
   return (
@@ -59,7 +82,12 @@ export function NearbyPlaceCard({ place }: { place: NearbyPlace }) {
       </div>
 
       <h3 className="mt-3 text-base font-semibold text-surface-900 dark:text-surface-50">
-        {place.name}
+        <Link
+          href={buildPlaceHref(place.slug, origin)}
+          className="transition-colors hover:text-primary-600 dark:hover:text-primary-400"
+        >
+          {place.name}
+        </Link>
       </h3>
 
       {place.shortDescription && (

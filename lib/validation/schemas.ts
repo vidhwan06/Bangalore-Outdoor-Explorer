@@ -30,6 +30,13 @@ export const placeStatusSchema = z.enum([
   'UNVERIFIED',
 ]);
 
+/** Public place route slug — mirrors the DB slug column (lowercase kebab-case). */
+export const placeSlugSchema = z
+  .string()
+  .min(1)
+  .max(250)
+  .regex(/^[a-z0-9-]+$/, 'Invalid slug format');
+
 export const visibilityLevelSchema = z.enum([
   'PUBLIC_EXACT',
   'PUBLIC_APPROXIMATE',

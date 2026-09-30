@@ -10,6 +10,10 @@ jest.mock('next/navigation', () => ({
   }),
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
+  // Mimics Next.js: notFound() unwinds the render — tests assert this marker
+  notFound: () => {
+    throw new Error('NEXT_NOT_FOUND');
+  },
 }));
 
 // Mock next/image - simple mock that returns a string to avoid JSX parsing issues

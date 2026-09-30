@@ -21,6 +21,7 @@ import { placeCategorySchema, type PlaceCategory } from '@/lib/validation/schema
 import { DiscoveryControls, type DiscoveryFormValues } from './DiscoveryControls';
 import { DiscoveryHeader } from './DiscoveryHeader';
 import { DiscoveryResults, type DiscoveryStatus } from './DiscoveryResults';
+import type { DiscoveryOrigin } from './NearbyPlaceCard';
 
 export interface ExploreDiscoveryProps {
   /** Category preselected from the URL (e.g. /explore?category=trek). */
@@ -42,6 +43,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ latitude?: string; longitude?: string }>({});
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const [searchOrigin, setSearchOrigin] = useState<DiscoveryOrigin | null>(null);
 
   const handleValuesChange = useCallback((patch: Partial<DiscoveryFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -86,6 +88,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
       });
       setPlaces(response.data);
       setTotalCount(response.pagination.count);
+      setSearchOrigin({ lat: validated.latitude, lng: validated.longitude });
       setStatus('success');
     } catch (error) {
       const code = error instanceof NearbyApiError ? error.code : 'http';
@@ -143,6 +146,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
             places={places}
             totalCount={totalCount}
             radiusMeters={values.radiusMeters}
+            origin={searchOrigin}
             errorMessage={errorMessage}
             onRetry={runSearch}
           />

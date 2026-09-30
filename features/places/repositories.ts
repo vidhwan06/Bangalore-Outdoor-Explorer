@@ -58,6 +58,24 @@ export interface PaginatedResult<T> {
   };
 }
 
+/** Official/verified source attached to a place (OfficialSource table). */
+export interface PlaceSourceResult {
+  id: string;
+  name: string;
+  type: string;
+  url: string | null;
+}
+
+/**
+ * Richer shape for single-place lookups (place details).
+ * Extends the shared PlaceResult with detail-only fields — the nearby
+ * endpoint and its response contract are unaffected.
+ */
+export interface PlaceDetailResult extends PlaceResult {
+  description: string | null;
+  sources: PlaceSourceResult[];
+}
+
 /**
  * Builds the WHERE clause for optional filters
  * Exported for testing purposes
@@ -254,9 +272,10 @@ export async function findPlaceById(id: string): Promise<PlaceResult | null> {
 }
 
 /**
- * Gets a single place by slug with coordinates
+ * Gets a single place by slug with coordinates, description and sources.
+ * Non-public visibility levels are excluded, same as every other lookup.
  */
-export async function findPlaceBySlug(slug: string): Promise<PlaceResult | null> {
+export async function findPlaceBySlug(slug: string): Promise<PlaceDetailResult | null> {
   const query = `
     SELECT
       id,
@@ -264,6 +283,7 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceResult | null>
       slug,
       category,
       "shortDescription",
+      description,
       ${getLatitudeSQL()} as latitude,
       ${getLongitudeSQL()} as longitude,
       0 as "distanceMeters",
@@ -276,6 +296,18 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceResult | null>
       AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
   `;
 
-  const rows = await prisma.$queryRawUnsafe<PlaceResult[]>(query, slug);
-  return rows[0] ?? null;
+  type PlaceDetailRow = PlaceResult & { description: string | null };
+
+  const rows = await prisma.$queryRawUnsafe<PlaceDetailRow[]>(query, slug);
+  const place = rows[0] ?? null;
+  if (!place) return null;
+
+  // Typed Prisma query (non-spatial) — no raw SQL needed for sources
+  const sources = await prisma.officialSource.findMany({
+    where: { placeId: place.id },
+    select: { id: true, name: true, type: true, url: true },
+    orderBy: { name: 'asc' },
+  });
+
+  return { ...place, sources };
 }

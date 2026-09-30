@@ -52,4 +52,20 @@ describe('NearbyPlaceCard', () => {
 
     expect(screen.getByText('800 m away')).toBeInTheDocument();
   });
+
+  it('links the place name to its details page', () => {
+    render(<NearbyPlaceCard place={makeNearbyPlace()} />);
+
+    const link = screen.getByRole('link', { name: 'Test Peak' });
+    expect(link).toHaveAttribute('href', '/places/test-peak');
+  });
+
+  it('carries the search origin in the details link when available', () => {
+    render(<NearbyPlaceCard place={makeNearbyPlace()} origin={{ lat: 12.9716, lng: 77.5946 }} />);
+
+    expect(screen.getByRole('link', { name: 'Test Peak' })).toHaveAttribute(
+      'href',
+      '/places/test-peak?lat=12.9716&lng=77.5946'
+    );
+  });
 });
