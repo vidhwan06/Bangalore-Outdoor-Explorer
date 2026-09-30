@@ -31,6 +31,7 @@ import type { PlaceCategory } from '@/lib/validation/schemas';
 import { DiscoveryControls, type DiscoveryFormValues } from './DiscoveryControls';
 import { DiscoveryHeader } from './DiscoveryHeader';
 import { DiscoveryResults, type DiscoveryStatus } from './DiscoveryResults';
+import { MapListToggle, type MapListView } from './MapListToggle';
 import type { DiscoveryOrigin, DiscoveryResultMode } from './NearbyPlaceCard';
 import { PlaceMap } from '@/components/map/PlaceMap';
 
@@ -58,6 +59,8 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [resultMode, setResultMode] = useState<DiscoveryResultMode>('radius');
   const [fitBoundsDone, setFitBoundsDone] = useState(false);
+  // Mobile map/list view state. Default to 'list' on mobile for better initial UX.
+  const [mobileView, setMobileView] = useState<MapListView>('list');
 
   // Guards result application across both flows: whichever request settles
   // last in *intent* order wins — an older response can never overwrite a
@@ -247,25 +250,36 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
           locationMessage={locationMessage}
         />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
-          <DiscoveryResults
-            status={status}
-            places={places}
-            totalCount={resultMode === 'bounds' ? viewportTotalCount : totalCount}
-            radiusMeters={values.radiusMeters}
-            origin={searchOrigin}
-            errorMessage={errorMessage}
-            mode={resultMode}
-            selectedPlaceId={selectedPlaceId}
-            onSelectPlace={setSelectedPlaceId}
-            onRetry={runSearch}
-            viewportHasMore={resultMode === 'bounds' ? viewportHasMore : false}
-            viewportOffset={resultMode === 'bounds' ? viewportOffset : 0}
-            viewportLoading={viewportStatus === 'loading_more'}
-            onLoadMoreViewport={resultMode === 'bounds' ? loadMoreViewport : undefined}
-          />
+        {/* Mobile Map/List toggle — hidden on desktop */}
+        <MapListToggle
+          view={mobileView}
+          onChange={setMobileView}
+          hasMapResults={mapPlaces.some((p) => p.location.kind !== 'unavailable')}
+        />
 
-          <aside aria-label="Map" className="hidden lg:block">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
+          {/* List view — visible on mobile when mobileView='list', always visible on desktop */}
+          <div className={mobileView === 'map' ? 'lg:block hidden' : 'block'}>
+            <DiscoveryResults
+              status={status}
+              places={places}
+              totalCount={resultMode === 'bounds' ? viewportTotalCount : totalCount}
+              radiusMeters={values.radiusMeters}
+              origin={searchOrigin}
+              errorMessage={errorMessage}
+              mode={resultMode}
+              selectedPlaceId={selectedPlaceId}
+              onSelectPlace={setSelectedPlaceId}
+              onRetry={runSearch}
+              viewportHasMore={resultMode === 'bounds' ? viewportHasMore : false}
+              viewportOffset={resultMode === 'bounds' ? viewportOffset : 0}
+              viewportLoading={viewportStatus === 'loading_more'}
+              onLoadMoreViewport={resultMode === 'bounds' ? loadMoreViewport : undefined}
+            />
+          </div>
+
+          {/* Map view — visible on mobile when mobileView='map', always visible on desktop */}
+          <aside aria-label="Map" className={mobileView === 'list' ? 'lg:block hidden' : 'hidden lg:block'}>
             {viewportStatus === 'error' && viewportErrorMessage && (
               <div
                 role="alert"
@@ -291,6 +305,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
               loading={viewportStatus === 'loading'}
               fitBounds={fitBoundsDone}
               onFitBoundsComplete={() => setFitBoundsDone(false)}
+              isVisible={mobileView === 'map'}
               className="h-full min-h-[24rem]"
             />
           </aside>

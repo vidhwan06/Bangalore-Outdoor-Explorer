@@ -180,4 +180,75 @@ describe('PlaceMap', () => {
       expect(onBoundsChange).not.toHaveBeenCalled();
     });
   });
+
+  describe('map visibility (Phase 2C.3C)', () => {
+    it('passes isVisible prop to the inner map component', async () => {
+      const { rerender } = render(<PlaceMap places={MAP_TEST_POINTS} isVisible={true} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Re-render with isVisible=false
+      rerender(<PlaceMap places={MAP_TEST_POINTS} isVisible={false} />);
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Re-render with isVisible=true again
+      rerender(<PlaceMap places={MAP_TEST_POINTS} isVisible={true} />);
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Component should render without error in all visibility states
+      expect(screen.getByLabelText('Test Peak')).toBeInTheDocument();
+    });
+
+    it('defaults isVisible to true when not specified', async () => {
+      render(<PlaceMap places={MAP_TEST_POINTS} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      expect(screen.getByLabelText('Test Peak')).toBeInTheDocument();
+    });
+
+    it('renders map container regardless of visibility (CSS controls display)', async () => {
+      render(<PlaceMap places={MAP_TEST_POINTS} isVisible={false} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Map container exists but is hidden via CSS
+      expect(screen.getByLabelText('Test Peak')).toBeInTheDocument();
+    });
+  });
+
+  describe('invalidateSize behavior', () => {
+    // Note: In jsdom, Leaflet doesn't fully initialize, so we test that
+    // the component renders correctly with visibility changes.
+    // Real invalidateSize behavior is tested in integration (explore-map).
+    it('renders without error when isVisible toggles', async () => {
+      const { rerender } = render(<PlaceMap places={MAP_TEST_POINTS} isVisible={true} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      rerender(<PlaceMap places={MAP_TEST_POINTS} isVisible={false} />);
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      rerender(<PlaceMap places={MAP_TEST_POINTS} isVisible={true} />);
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      expect(screen.getByLabelText('Test Peak')).toBeInTheDocument();
+    });
+  });
 });

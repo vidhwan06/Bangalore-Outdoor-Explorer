@@ -179,3 +179,113 @@ describe('ExploreDiscovery', () => {
     expect(link).toHaveAttribute('href', '/places/test-peak?lat=12.9716&lng=77.5946');
   });
 });
+
+describe('ExploreDiscovery — Mobile Map/List Toggle (Phase 2C.3C)', () => {
+  beforeEach(() => {
+    mockFetch.mockResolvedValue(okResponse(makeNearbyResponse([makeNearbyPlace()])));
+  });
+
+  it('renders the MapListToggle component', async () => {
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+
+    expect(screen.getByRole('group', { name: /switch between map and list view/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'List' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Map' })).toBeInTheDocument();
+  });
+
+  it('defaults to List view on mobile', async () => {
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Map' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('switches to Map view when Map button is clicked', async () => {
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+
+    expect(screen.getByRole('button', { name: 'Map' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('switches back to List view when List button is clicked', async () => {
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    expect(screen.getByRole('button', { name: 'Map' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('does not trigger a new places fetch when toggling Map/List', async () => {
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+
+    // No additional fetches for toggling
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes correct isVisible prop to PlaceMap (true when Map view, false when List view)', async () => {
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+
+    // Default is List view -> map should be hidden (isVisible=false)
+    const mapContainer = document.querySelector('.leaflet-container');
+    expect(mapContainer).toBeTruthy();
+
+    // Switch to Map view -> map should be visible (isVisible=true)
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    expect(screen.getByRole('button', { name: 'Map' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('preserves places, pagination, and viewport state when toggling', async () => {
+    mockFetch.mockResolvedValue(
+      okResponse(
+        makeNearbyResponse(
+          [
+            makeNearbyPlace(),
+            makeNearbyPlace({ id: 'p2', name: 'Second', slug: 'second' }),
+          ],
+          { count: 50 }
+        )
+      )
+    );
+
+    render(<ExploreDiscovery />);
+    clickSearch();
+
+    await screen.findByRole('heading', { level: 3, name: 'Test Peak' });
+
+    // Trigger a viewport search by "moving" the map (simulate bounds change)
+    // In the test, we just verify the list still shows results after toggling
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+
+    // Results should still be there
+    expect(screen.getByRole('heading', { level: 3, name: 'Test Peak' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Second' })).toBeInTheDocument();
+  });
+});

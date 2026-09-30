@@ -51,6 +51,12 @@ export interface PlaceMapProps {
   fitBounds?: boolean;
   /** Called after fitBounds completes, so the parent can reset the flag. */
   onFitBoundsComplete?: () => void;
+  /**
+   * Whether the map is currently visible. When the map transitions from
+   * hidden to visible, Leaflet needs to recalculate its container size.
+   * Desktop is always visible; mobile toggles based on the Map/List view.
+   */
+  isVisible?: boolean;
   /** CSS height of the map box. Defaults to filling its container. */
   height?: string;
   /** Extra classes for the map box (sizing, layout). */
@@ -67,6 +73,7 @@ export function PlaceMap({
   loading,
   fitBounds,
   onFitBoundsComplete,
+  isVisible = true,
   height,
   className,
 }: PlaceMapProps) {
@@ -90,6 +97,7 @@ export function PlaceMap({
         onBoundsChange={onBoundsChange}
         fitBounds={fitBounds}
         onFitBoundsComplete={onFitBoundsComplete}
+        isVisible={isVisible}
       />
       {loading && (
         <div

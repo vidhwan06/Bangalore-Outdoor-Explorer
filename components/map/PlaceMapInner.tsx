@@ -90,6 +90,7 @@ export default function PlaceMapInner({
   onBoundsChange,
   fitBounds,
   onFitBoundsComplete,
+  isVisible = true,
 }: PlaceMapProps) {
   const plottablePlaces = places.filter(isPlottable);
   const resolvedCenter = resolveCenter(center, plottablePlaces);
@@ -105,6 +106,16 @@ export default function PlaceMapInner({
       setMapReady(true);
     }
   }, []);
+
+  // Invalidate map size when:
+  // - mapReady becomes true (initial mount)
+  // - isVisible transitions to true (map becomes visible after being hidden)
+  // Only runs when the map is both ready AND visible.
+  useEffect(() => {
+    if (mapReady && isVisible && mapRef.current) {
+      mapRef.current.invalidateSize();
+    }
+  }, [mapReady, isVisible]);
 
   // One-time fitBounds to the current markers after the map initializes.
   useEffect(() => {
