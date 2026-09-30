@@ -3,7 +3,7 @@
 // No database access here — this module only holds constants, labels and validation.
 
 import { z } from 'zod';
-import { type PlaceCategory } from '@/lib/validation/schemas';
+import { placeCategorySchema, type PlaceCategory } from '@/lib/validation/schemas';
 
 /** A plain option shape compatible with components/ui Select's `options` prop. */
 export interface DiscoveryOption {
@@ -101,6 +101,38 @@ export const DIFFICULTY_OPTIONS: DiscoveryOption[] = [
 /** Human readable radius, e.g. 10000 -> "10 km". */
 export function formatRadius(meters: number): string {
   return `${Math.round(meters / 1000)} km`;
+}
+
+// -----------------------------------------
+// Filter parsing (one source of truth for API filters)
+// -----------------------------------------
+
+/** Raw category/difficulty strings as held by the discovery form. */
+export interface DiscoveryFilterInput {
+  category: string;
+  difficulty: string;
+}
+
+export interface DiscoveryFilterValues {
+  category?: PlaceCategory;
+  difficulty?: number;
+}
+
+/**
+ * Parses the active discovery form filters into API-ready values.
+ * Shared by the radius search and the viewport (bounds) search so there is
+ * exactly one source of truth for which filters apply to a request.
+ * Invalid/empty selections resolve to `undefined` (filter not applied).
+ */
+export function parseFilterValues(input: DiscoveryFilterInput): DiscoveryFilterValues {
+  const parsedCategory = placeCategorySchema.safeParse(input.category);
+  const difficulty = input.difficulty === '' ? Number.NaN : Number(input.difficulty);
+
+  return {
+    category: parsedCategory.success ? parsedCategory.data : undefined,
+    difficulty:
+      Number.isInteger(difficulty) && difficulty >= 1 && difficulty <= 5 ? difficulty : undefined,
+  };
 }
 
 // -----------------------------------------

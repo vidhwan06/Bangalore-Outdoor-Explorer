@@ -7,6 +7,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet';
 import type { MapPlaceLocation, MapPlacePoint } from '@/features/places/map-places';
+import { MapBoundsReporter } from './MapBoundsReporter';
 import type { PlaceMapCenter, PlaceMapProps } from './PlaceMap';
 
 type PlottablePlace = Omit<MapPlacePoint, 'location'> & {
@@ -85,6 +86,7 @@ export default function PlaceMapInner({
   zoom,
   selectedPlaceId,
   onPlaceSelect,
+  onBoundsChange,
 }: PlaceMapProps) {
   const plottablePlaces = places.filter(isPlottable);
   const resolvedCenter = resolveCenter(center, plottablePlaces);
@@ -98,6 +100,7 @@ export default function PlaceMapInner({
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+      <MapBoundsReporter onBoundsChange={onBoundsChange} />
       {plottablePlaces.map((place) => (
         <Marker
           key={place.id}

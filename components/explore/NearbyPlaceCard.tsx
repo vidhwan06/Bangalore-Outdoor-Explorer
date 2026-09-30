@@ -1,9 +1,9 @@
 // Place card for discovery results.
-// Renders only fields the /api/places/nearby endpoint actually returns
+// Renders only fields the discovery endpoints actually return
 // and links each result to its details page.
 
 import Link from 'next/link';
-import { cn, formatDistance } from '@/lib/utils';
+import { calculateDistance, cn, formatDistance } from '@/lib/utils';
 import {
   DIFFICULTY_LABELS,
   PLACE_CATEGORY_ICONS,
@@ -61,16 +61,52 @@ export function buildPlaceHref(slug: string, origin?: DiscoveryOrigin | null): s
   return `${base}?${params.toString()}`;
 }
 
+/** How a discovery result set was produced. */
+export type DiscoveryResultMode = 'radius' | 'bounds';
+
 export interface NearbyPlaceCardProps {
   place: NearbyPlace;
   origin?: DiscoveryOrigin | null;
+  /**
+   * radius results carry a server-computed distance; bounds results carry a
+   * placeholder (0), so their distance is derived from the search origin
+   * instead — or omitted when there is no origin yet.
+   */
+  mode?: DiscoveryResultMode;
+  /** Selection state, kept in sync with the map marker. */
+  selected?: boolean;
+  /** Called when this card is selected (click on card, or focus on its link). */
+  onSelect?: (id: string) => void;
 }
 
-export function NearbyPlaceCard({ place, origin }: NearbyPlaceCardProps) {
+export function NearbyPlaceCard({
+  place,
+  origin,
+  mode = 'radius',
+  selected = false,
+  onSelect,
+}: NearbyPlaceCardProps) {
   const approximate = place.visibilityLevel === 'PUBLIC_APPROXIMATE';
 
+  const distanceMeters =
+    mode === 'bounds'
+      ? origin
+        ? calculateDistance(origin.lat, origin.lng, place.latitude, place.longitude)
+        : null
+      : place.distanceMeters;
+
   return (
-    <article className="card p-4" aria-label={place.name}>
+    <article
+      className={cn(
+        'card p-4',
+        onSelect && 'cursor-pointer',
+        selected && 'ring-2 ring-primary-600 ring-offset-2 dark:ring-offset-gray-900'
+      )}
+      aria-label={place.name}
+      aria-current={selected ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+      onClick={onSelect ? () => onSelect(place.id) : undefined}
+    >
       <div className="flex items-start justify-between gap-3">
         <span className="badge-primary truncate text-xs">
           <span aria-hidden="true">{PLACE_CATEGORY_ICONS[place.category]}</span>
@@ -85,6 +121,7 @@ export function NearbyPlaceCard({ place, origin }: NearbyPlaceCardProps) {
         <Link
           href={buildPlaceHref(place.slug, origin)}
           className="transition-colors hover:text-primary-600 dark:hover:text-primary-400"
+          onFocus={onSelect ? () => onSelect(place.id) : undefined}
         >
           {place.name}
         </Link>
@@ -97,9 +134,11 @@ export function NearbyPlaceCard({ place, origin }: NearbyPlaceCardProps) {
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
-        <span title="Distance from your starting point">
-          {formatDistance(place.distanceMeters)} away
-        </span>
+        {distanceMeters !== null && (
+          <span title="Distance from your starting point">
+            {formatDistance(distanceMeters)} away
+          </span>
+        )}
         {place.difficulty !== null && (
           <span
             className={cn('badge difficulty-' + place.difficulty)}

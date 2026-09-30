@@ -1,9 +1,9 @@
 // Results area for the discovery page — initial, loading, results,
-// empty and error states for GET /api/places/nearby.
+// empty and error states for the discovery endpoints (nearby + bounds).
 
 import { formatRadius } from '@/features/places/discovery';
 import type { NearbyPlace } from '@/features/places/nearby';
-import { NearbyPlaceCard, type DiscoveryOrigin } from './NearbyPlaceCard';
+import { NearbyPlaceCard, type DiscoveryOrigin, type DiscoveryResultMode } from './NearbyPlaceCard';
 
 export type DiscoveryStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -16,6 +16,12 @@ export interface DiscoveryResultsProps {
   /** Last successful search origin — carried into place detail links. */
   origin?: DiscoveryOrigin | null;
   errorMessage?: string | null;
+  /** How the current result set was produced (radius search vs viewport). */
+  mode?: DiscoveryResultMode;
+  /** Currently selected result — kept in sync with the map marker. */
+  selectedPlaceId?: string | null;
+  /** Called when a result card is selected (maps to the marker). */
+  onSelectPlace?: (id: string) => void;
   onRetry: () => void;
 }
 
@@ -100,15 +106,16 @@ function ErrorState({
   );
 }
 
-function EmptyState() {
+function EmptyState({ mode }: { mode: DiscoveryResultMode }) {
   return (
     <div className="card p-8 text-center">
       <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
         No places found in this area
       </h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-surface-600 dark:text-surface-400">
-        Try a wider radius, or clear the category and difficulty filters. Destinations are added as
-        they are verified, so coverage grows over time.
+        {mode === 'bounds'
+          ? 'Try panning or zooming the map, or clear the category and difficulty filters. Destinations are added as they are verified, so coverage grows over time.'
+          : 'Try a wider radius, or clear the category and difficulty filters. Destinations are added as they are verified, so coverage grows over time.'}
       </p>
     </div>
   );
@@ -121,6 +128,9 @@ export function DiscoveryResults({
   radiusMeters,
   origin,
   errorMessage,
+  mode = 'radius',
+  selectedPlaceId = null,
+  onSelectPlace,
   onRetry,
 }: DiscoveryResultsProps) {
   const count = totalCount ?? places.length;
@@ -130,16 +140,26 @@ export function DiscoveryResults({
       {status === 'idle' && <IdleState />}
       {status === 'loading' && <LoadingState />}
       {status === 'error' && <ErrorState errorMessage={errorMessage ?? null} onRetry={onRetry} />}
-      {status === 'success' && places.length === 0 && <EmptyState />}
+      {status === 'success' && places.length === 0 && <EmptyState mode={mode} />}
       {status === 'success' && places.length > 0 && (
         <>
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
-              {count} {count === 1 ? 'place' : 'places'} within {formatRadius(radiusMeters)}
+              {mode === 'bounds' ? (
+                <>
+                  {count} {count === 1 ? 'place' : 'places'} in this area
+                </>
+              ) : (
+                <>
+                  {count} {count === 1 ? 'place' : 'places'} within {formatRadius(radiusMeters)}
+                </>
+              )}
             </h2>
             {count > places.length && (
               <p className="text-sm text-surface-500 dark:text-surface-400">
-                Showing the {places.length} closest
+                {mode === 'bounds'
+                  ? `Showing ${places.length} of ${count}`
+                  : `Showing the ${places.length} closest`}
               </p>
             )}
           </div>
@@ -147,7 +167,13 @@ export function DiscoveryResults({
           <ul className="grid gap-4 sm:grid-cols-2">
             {places.map((place) => (
               <li key={place.id}>
-                <NearbyPlaceCard place={place} origin={origin} />
+                <NearbyPlaceCard
+                  place={place}
+                  origin={origin}
+                  mode={mode}
+                  selected={selectedPlaceId === place.id}
+                  onSelect={onSelectPlace}
+                />
               </li>
             ))}
           </ul>

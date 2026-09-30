@@ -1,14 +1,20 @@
 'use client';
 
 // Discovery container — the only place that performs client-side data fetching.
-// UI -> fetchNearbyPlaces() -> GET /api/places/nearby -> service -> repository -> PostGIS
+// UI -> fetchNearbyPlaces()      -> GET /api/places/nearby  -> service -> repository -> PostGIS
+//    -> useViewportSearch()      -> GET /api/places/bounds  -> service -> repository -> PostGIS
+//
+// Both result sets flow through one state (places) so the list and the map
+// always represent the same data, and every marker is produced by the central
+// privacy mapper (toMapPlacePoint) — the map never sees raw coordinates.
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { roundCoordinate } from '@/lib/utils';
 import {
   DEFAULT_RADIUS_METERS,
   DEFAULT_SEARCH_CENTER,
   SEARCH_RESULT_LIMIT,
+  parseFilterValues,
   validateDiscoveryLocation,
 } from '@/features/places/discovery';
 import {
@@ -16,18 +22,17 @@ import {
   NearbyApiError,
   fetchNearbyPlaces,
   type NearbyPlace,
+  type NearbyPlacesResponse,
 } from '@/features/places/nearby';
-import { placeCategorySchema, type PlaceCategory } from '@/lib/validation/schemas';
+import type { MapBounds } from '@/features/places/bounds';
+import { toMapPlacePoint } from '@/features/places/map-places';
+import { useViewportSearch } from '@/features/places/use-viewport-search';
+import type { PlaceCategory } from '@/lib/validation/schemas';
 import { DiscoveryControls, type DiscoveryFormValues } from './DiscoveryControls';
 import { DiscoveryHeader } from './DiscoveryHeader';
 import { DiscoveryResults, type DiscoveryStatus } from './DiscoveryResults';
-import type { DiscoveryOrigin } from './NearbyPlaceCard';
+import type { DiscoveryOrigin, DiscoveryResultMode } from './NearbyPlaceCard';
 import { PlaceMap } from '@/components/map/PlaceMap';
-import {
-  SYNTHETIC_MAP_POINTS,
-  SYNTHETIC_MAP_ZOOM,
-  syntheticMapCenter,
-} from '@/features/places/dev-map-fixtures';
 
 export interface ExploreDiscoveryProps {
   /** Category preselected from the URL (e.g. /explore?category=trek). */
@@ -50,7 +55,13 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   const [fieldErrors, setFieldErrors] = useState<{ latitude?: string; longitude?: string }>({});
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
   const [searchOrigin, setSearchOrigin] = useState<DiscoveryOrigin | null>(null);
-  const [selectedMapPlaceId, setSelectedMapPlaceId] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [resultMode, setResultMode] = useState<DiscoveryResultMode>('radius');
+
+  // Guards result application across both flows: whichever request settles
+  // last in *intent* order wins — an older response can never overwrite a
+  // newer one (see runSearch / handleViewportResults).
+  const resultsSequenceRef = useRef(0);
 
   const handleValuesChange = useCallback((patch: Partial<DiscoveryFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -63,6 +74,35 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
     });
   }, []);
 
+  /** Single place both flows write results through. */
+  const applyResults = useCallback((response: NearbyPlacesResponse, mode: DiscoveryResultMode) => {
+    setPlaces(response.data);
+    setTotalCount(response.pagination.count);
+    setStatus('success');
+    setResultMode(mode);
+    setSelectedPlaceId(null);
+  }, []);
+
+  // Viewport (bounds) discovery: debounce, aborts and stale-response
+  // protection live in features/places/use-viewport-search — not in the map.
+  const handleViewportResults = useCallback(
+    (response: NearbyPlacesResponse) => {
+      // Claim the latest intent — any radius search still in flight is older.
+      resultsSequenceRef.current += 1;
+      applyResults(response, 'bounds');
+    },
+    [applyResults]
+  );
+
+  const viewportSearch = useViewportSearch({ onResults: handleViewportResults });
+  const {
+    status: viewportStatus,
+    errorMessage: viewportErrorMessage,
+    schedule: scheduleViewportSearch,
+    retry: retryViewportSearch,
+    cancel: cancelViewportSearch,
+  } = viewportSearch;
+
   const runSearch = useCallback(async () => {
     const validated = validateDiscoveryLocation({
       latitude: values.latitude,
@@ -73,13 +113,16 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
       return;
     }
 
+    // A new radius search supersedes pending/in-flight viewport work.
+    cancelViewportSearch();
+    const sequence = ++resultsSequenceRef.current;
+
     setFieldErrors({});
     setLocationMessage(null);
     setErrorMessage(null);
     setStatus('loading');
 
-    const parsedCategory = placeCategorySchema.safeParse(values.category);
-    const difficulty = values.difficulty === '' ? Number.NaN : Number(values.difficulty);
+    const filters = parseFilterValues({ category: values.category, difficulty: values.difficulty });
 
     try {
       const response = await fetchNearbyPlaces({
@@ -87,22 +130,40 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
         lng: validated.longitude,
         radiusMeters: values.radiusMeters,
         limit: SEARCH_RESULT_LIMIT,
-        category: parsedCategory.success ? parsedCategory.data : undefined,
-        difficulty:
-          Number.isInteger(difficulty) && difficulty >= 1 && difficulty <= 5
-            ? difficulty
-            : undefined,
+        category: filters.category,
+        difficulty: filters.difficulty,
       });
-      setPlaces(response.data);
-      setTotalCount(response.pagination.count);
+      if (sequence !== resultsSequenceRef.current) {
+        return; // a newer result set landed while this search was in flight
+      }
+      applyResults(response, 'radius');
       setSearchOrigin({ lat: validated.latitude, lng: validated.longitude });
-      setStatus('success');
     } catch (error) {
+      if (sequence !== resultsSequenceRef.current) {
+        return;
+      }
       const code = error instanceof NearbyApiError ? error.code : 'http';
       setErrorMessage(NEARBY_ERROR_MESSAGES[code]);
       setStatus('error');
     }
-  }, [values]);
+  }, [values, applyResults, cancelViewportSearch]);
+
+  /** Map viewport settled -> debounced bounds search with the active filters. */
+  const handleBoundsChange = useCallback(
+    (bounds: MapBounds) => {
+      const filters = parseFilterValues({
+        category: values.category,
+        difficulty: values.difficulty,
+      });
+      scheduleViewportSearch({
+        ...bounds,
+        limit: SEARCH_RESULT_LIMIT,
+        category: filters.category,
+        difficulty: filters.difficulty,
+      });
+    },
+    [values.category, values.difficulty, scheduleViewportSearch]
+  );
 
   const handleUseCurrentLocation = useCallback(() => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -131,6 +192,21 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
     );
   }, []);
 
+  // Privacy boundary: raw API rows -> MapPlacePoint[] before touching the map.
+  const mapPlaces = useMemo(() => places.map(toMapPlacePoint), [places]);
+
+  // Initial view only (react-leaflet ignores later center changes): the form's
+  // origin, falling back to the shared discovery default — never baked into
+  // the map component itself.
+  const mapCenter = useMemo(() => {
+    const latitude = Number(values.latitude);
+    const longitude = Number(values.longitude);
+    return {
+      latitude: Number.isFinite(latitude) ? latitude : DEFAULT_SEARCH_CENTER.latitude,
+      longitude: Number.isFinite(longitude) ? longitude : DEFAULT_SEARCH_CENTER.longitude,
+    };
+  }, [values.latitude, values.longitude]);
+
   return (
     <div className="min-h-screen">
       <DiscoveryHeader />
@@ -146,7 +222,6 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
           locationMessage={locationMessage}
         />
 
-        {/* Results + map column: map⇄viewport data wiring arrives in Phase 2C.2 */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
           <DiscoveryResults
             status={status}
@@ -155,17 +230,36 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
             radiusMeters={values.radiusMeters}
             origin={searchOrigin}
             errorMessage={errorMessage}
+            mode={resultMode}
+            selectedPlaceId={selectedPlaceId}
+            onSelectPlace={setSelectedPlaceId}
             onRetry={runSearch}
           />
 
-          {/* Phase 2C.1: synthetic markers prove the map foundation */}
           <aside aria-label="Map" className="hidden lg:block">
+            {viewportStatus === 'error' && viewportErrorMessage && (
+              <div
+                role="alert"
+                className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
+              >
+                <span>{viewportErrorMessage}</span>
+                <button
+                  type="button"
+                  onClick={retryViewportSearch}
+                  className="font-semibold underline hover:no-underline"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             <PlaceMap
-              places={SYNTHETIC_MAP_POINTS}
-              center={syntheticMapCenter()}
-              zoom={SYNTHETIC_MAP_ZOOM}
-              selectedPlaceId={selectedMapPlaceId}
-              onPlaceSelect={setSelectedMapPlaceId}
+              places={mapPlaces}
+              center={mapCenter}
+              zoom={10}
+              selectedPlaceId={selectedPlaceId}
+              onPlaceSelect={setSelectedPlaceId}
+              onBoundsChange={handleBoundsChange}
+              loading={viewportStatus === 'loading'}
               className="h-full min-h-[24rem]"
             />
           </aside>

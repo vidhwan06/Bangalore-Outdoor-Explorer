@@ -7,6 +7,7 @@ import {
   PLACE_CATEGORY_LABELS,
   RADIUS_OPTIONS,
   formatRadius,
+  parseFilterValues,
   validateDiscoveryLocation,
 } from '@/features/places/discovery';
 
@@ -83,5 +84,33 @@ describe('validateDiscoveryLocation', () => {
       latitude: -90,
       longitude: 180,
     });
+  });
+});
+
+describe('parseFilterValues', () => {
+  it('parses valid category and difficulty selections', () => {
+    expect(parseFilterValues({ category: 'TREK', difficulty: '3' })).toEqual({
+      category: 'TREK',
+      difficulty: 3,
+    });
+  });
+
+  it('resolves empty selections to undefined filters', () => {
+    expect(parseFilterValues({ category: '', difficulty: '' })).toEqual({
+      category: undefined,
+      difficulty: undefined,
+    });
+  });
+
+  it('drops an unknown category', () => {
+    expect(parseFilterValues({ category: 'NOT_A_CATEGORY', difficulty: '' }).category).toBe(
+      undefined
+    );
+  });
+
+  it('drops out-of-range or non-integer difficulty', () => {
+    expect(parseFilterValues({ category: '', difficulty: '9' }).difficulty).toBeUndefined();
+    expect(parseFilterValues({ category: '', difficulty: '0' }).difficulty).toBeUndefined();
+    expect(parseFilterValues({ category: '', difficulty: '2.5' }).difficulty).toBeUndefined();
   });
 });

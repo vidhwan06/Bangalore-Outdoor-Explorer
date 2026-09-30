@@ -105,16 +105,17 @@ function isAbortError(error: unknown): boolean {
 }
 
 /**
- * Fetches places near a point from the API and validates the response.
- * Throws NearbyApiError for network, HTTP, rate-limit and payload failures.
+ * Shared GET helper for the place-list endpoints (nearby + bounds).
+ * Performs the request, maps rate-limit/HTTP/network/payload failures to
+ * NearbyApiError and validates the { data, pagination } response contract.
  */
-export async function fetchNearbyPlaces(
-  query: NearbyPlacesQuery,
+export async function requestPlacesJson(
+  url: string,
   init?: RequestInit
 ): Promise<NearbyPlacesResponse> {
   let response: Response;
   try {
-    response = await fetch(buildNearbyPlacesUrl(query), {
+    response = await fetch(url, {
       headers: { Accept: 'application/json' },
       signal: init?.signal,
     });
@@ -153,4 +154,15 @@ export async function fetchNearbyPlaces(
   }
 
   return parsed.data;
+}
+
+/**
+ * Fetches places near a point from the API and validates the response.
+ * Throws NearbyApiError for network, HTTP, rate-limit and payload failures.
+ */
+export async function fetchNearbyPlaces(
+  query: NearbyPlacesQuery,
+  init?: RequestInit
+): Promise<NearbyPlacesResponse> {
+  return requestPlacesJson(buildNearbyPlacesUrl(query), init);
 }

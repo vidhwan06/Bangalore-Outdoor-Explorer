@@ -4,7 +4,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlaceMap } from '@/components/map/PlaceMap';
-import { SYNTHETIC_MAP_POINTS } from '@/features/places/dev-map-fixtures';
+import { MAP_TEST_POINTS } from '../fixtures/map-places';
 
 describe('PlaceMap', () => {
   it('renders the map region', async () => {
@@ -16,13 +16,9 @@ describe('PlaceMap', () => {
     });
   });
 
-  it('renders a marker for each synthetic place', async () => {
+  it('renders a marker for each fixture place', async () => {
     render(
-      <PlaceMap
-        places={SYNTHETIC_MAP_POINTS}
-        center={{ latitude: 13, longitude: 77.5 }}
-        zoom={10}
-      />
+      <PlaceMap places={MAP_TEST_POINTS} center={{ latitude: 13, longitude: 77.5 }} zoom={10} />
     );
 
     expect(await screen.findByLabelText('Test Peak')).toBeInTheDocument();
@@ -34,7 +30,7 @@ describe('PlaceMap', () => {
 
   it('invokes the selection callback when a marker is clicked', async () => {
     const onPlaceSelect = jest.fn();
-    render(<PlaceMap places={SYNTHETIC_MAP_POINTS} onPlaceSelect={onPlaceSelect} />);
+    render(<PlaceMap places={MAP_TEST_POINTS} onPlaceSelect={onPlaceSelect} />);
 
     const marker = await screen.findByLabelText('Test Peak');
     fireEvent.click(marker);
@@ -44,7 +40,7 @@ describe('PlaceMap', () => {
   });
 
   it('represents the selected marker state', async () => {
-    render(<PlaceMap places={SYNTHETIC_MAP_POINTS} selectedPlaceId="second-hill" />);
+    render(<PlaceMap places={MAP_TEST_POINTS} selectedPlaceId="second-hill" />);
 
     const selected = await screen.findByLabelText('Second Hill');
     expect(selected).toHaveAttribute('aria-pressed', 'true');
@@ -67,7 +63,7 @@ describe('PlaceMap', () => {
   });
 
   it('plots PUBLIC_EXACT places without any approximation marker', async () => {
-    render(<PlaceMap places={SYNTHETIC_MAP_POINTS} />);
+    render(<PlaceMap places={MAP_TEST_POINTS} />);
 
     const marker = await screen.findByLabelText('Test Peak');
     expect(marker).toHaveClass('place-map-marker');
@@ -76,7 +72,7 @@ describe('PlaceMap', () => {
   });
 
   it('marks PUBLIC_APPROXIMATE places as approximate in the marker itself', async () => {
-    render(<PlaceMap places={SYNTHETIC_MAP_POINTS} />);
+    render(<PlaceMap places={MAP_TEST_POINTS} />);
 
     const marker = await screen.findByLabelText('Riverside Test Point (approximate location)');
     expect(marker).toHaveClass('place-map-marker--approximate');
@@ -87,15 +83,32 @@ describe('PlaceMap', () => {
       <PlaceMap
         places={[
           { id: 'no-location', name: 'No Location Place', location: { kind: 'unavailable' } },
-          ...SYNTHETIC_MAP_POINTS,
+          ...MAP_TEST_POINTS,
         ]}
       />
     );
 
     expect(await screen.findByLabelText('Test Peak')).toBeInTheDocument();
     expect(screen.queryByLabelText('No Location Place')).not.toBeInTheDocument();
-    expect(container.querySelectorAll('.place-map-marker')).toHaveLength(
-      SYNTHETIC_MAP_POINTS.length
+    expect(container.querySelectorAll('.place-map-marker')).toHaveLength(MAP_TEST_POINTS.length);
+  });
+
+  it('shows a subtle loading overlay while viewport results are pending', () => {
+    render(<PlaceMap places={[]} loading />);
+
+    const indicator = screen.getByRole('status', { name: 'Updating map results' });
+    expect(indicator).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Interactive map' })).toHaveAttribute(
+      'aria-busy',
+      'true'
     );
+  });
+
+  it('hides the loading overlay when not loading', async () => {
+    const { rerender } = render(<PlaceMap places={[]} loading />);
+    expect(screen.getByRole('status', { name: 'Updating map results' })).toBeInTheDocument();
+
+    rerender(<PlaceMap places={[]} loading={false} />);
+    expect(screen.queryByRole('status', { name: 'Updating map results' })).not.toBeInTheDocument();
   });
 });
