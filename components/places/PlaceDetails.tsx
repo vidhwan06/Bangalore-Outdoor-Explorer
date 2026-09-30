@@ -8,7 +8,9 @@ import {
   PLACE_CATEGORY_ICONS,
   PLACE_CATEGORY_LABELS,
 } from '@/features/places/discovery';
+import { toMapPlacePoint } from '@/features/places/map-places';
 import type { PlaceDetailResult } from '@/features/places/repositories';
+import { PlaceMap } from '@/components/map/PlaceMap';
 
 const STATUS_LABELS: Record<PlaceDetailResult['status'], string> = {
   OPEN: 'Open',
@@ -65,6 +67,17 @@ export function PlaceDetails({ place, distanceMeters }: PlaceDetailsProps) {
   const approximate = place.visibilityLevel === 'PUBLIC_APPROXIMATE';
   const description = (place.description ?? place.shortDescription ?? '').trim();
   const hasDistance = typeof distanceMeters === 'number' && Number.isFinite(distanceMeters);
+
+  // Privacy-resolved location: exact coordinates only for PUBLIC_EXACT,
+  // a coarse point for PUBLIC_APPROXIMATE, no map at all otherwise.
+  const mapPlace = toMapPlacePoint({
+    id: place.id,
+    name: place.name,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    visibilityLevel: place.visibilityLevel,
+  });
+  const mapLocation = mapPlace.location;
 
   return (
     <main className="min-h-screen">
@@ -187,16 +200,26 @@ export function PlaceDetails({ place, distanceMeters }: PlaceDetailsProps) {
           )}
         </div>
 
-        {/* Location panel: filled in during Phase 2C */}
+        {/* Location panel: map view of this destination (2C.2 adds viewport sync) */}
         <aside aria-label="Map" className="mt-6">
-          <div className="card flex min-h-[16rem] flex-col items-center justify-center p-6 text-center">
-            <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
-              Map view coming soon
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-surface-500 dark:text-surface-400">
-              This destination will appear on the interactive map.
-            </p>
-          </div>
+          {mapLocation.kind === 'unavailable' ? (
+            <div className="card flex min-h-[16rem] flex-col items-center justify-center p-6 text-center">
+              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                Location not available
+              </p>
+              <p className="mt-1 max-w-sm text-sm text-surface-500 dark:text-surface-400">
+                A map location for this destination is not published.
+              </p>
+            </div>
+          ) : (
+            <PlaceMap
+              places={[mapPlace]}
+              center={{ latitude: mapLocation.latitude, longitude: mapLocation.longitude }}
+              zoom={mapLocation.kind === 'approximate' ? 12 : 13}
+              selectedPlaceId={mapPlace.id}
+              height="20rem"
+            />
+          )}
         </aside>
       </article>
     </main>

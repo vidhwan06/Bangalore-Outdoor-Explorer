@@ -22,6 +22,12 @@ import { DiscoveryControls, type DiscoveryFormValues } from './DiscoveryControls
 import { DiscoveryHeader } from './DiscoveryHeader';
 import { DiscoveryResults, type DiscoveryStatus } from './DiscoveryResults';
 import type { DiscoveryOrigin } from './NearbyPlaceCard';
+import { PlaceMap } from '@/components/map/PlaceMap';
+import {
+  SYNTHETIC_MAP_POINTS,
+  SYNTHETIC_MAP_ZOOM,
+  syntheticMapCenter,
+} from '@/features/places/dev-map-fixtures';
 
 export interface ExploreDiscoveryProps {
   /** Category preselected from the URL (e.g. /explore?category=trek). */
@@ -44,6 +50,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   const [fieldErrors, setFieldErrors] = useState<{ latitude?: string; longitude?: string }>({});
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
   const [searchOrigin, setSearchOrigin] = useState<DiscoveryOrigin | null>(null);
+  const [selectedMapPlaceId, setSelectedMapPlaceId] = useState<string | null>(null);
 
   const handleValuesChange = useCallback((patch: Partial<DiscoveryFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -139,7 +146,7 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
           locationMessage={locationMessage}
         />
 
-        {/* Results + map column: the map panel is filled in Phase 2C */}
+        {/* Results + map column: map⇄viewport data wiring arrives in Phase 2C.2 */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
           <DiscoveryResults
             status={status}
@@ -151,15 +158,16 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
             onRetry={runSearch}
           />
 
+          {/* Phase 2C.1: synthetic markers prove the map foundation */}
           <aside aria-label="Map" className="hidden lg:block">
-            <div className="card flex h-full min-h-[24rem] flex-col items-center justify-center p-6 text-center">
-              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
-                Map view coming soon
-              </p>
-              <p className="mt-1 max-w-[16rem] text-sm text-surface-500 dark:text-surface-400">
-                These results will appear on an interactive map next to the list.
-              </p>
-            </div>
+            <PlaceMap
+              places={SYNTHETIC_MAP_POINTS}
+              center={syntheticMapCenter()}
+              zoom={SYNTHETIC_MAP_ZOOM}
+              selectedPlaceId={selectedMapPlaceId}
+              onPlaceSelect={setSelectedMapPlaceId}
+              className="h-full min-h-[24rem]"
+            />
           </aside>
         </div>
       </div>

@@ -93,11 +93,11 @@ describe('PlaceDetails', () => {
     expect(screen.queryByText('Sources')).not.toBeInTheDocument();
   });
 
-  it('reserves the map placeholder for Phase 2C', () => {
+  it('renders the map component in the location panel', async () => {
     render(<PlaceDetails place={makePlaceDetail()} />);
 
     expect(screen.getByRole('complementary', { name: 'Map' })).toBeInTheDocument();
-    expect(screen.getByText('Map view coming soon')).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'Interactive map' })).toBeInTheDocument();
   });
 
   it('never renders fabricated fields', () => {
