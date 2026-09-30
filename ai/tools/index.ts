@@ -3,7 +3,7 @@
 // Implementation will be in separate service files
 
 import { z } from 'zod';
-import { PlaceCategory, PlaceStatus, TrustLevel, VisibilityLevel } from '@prisma/client';
+import { placeCategorySchema, placeStatusSchema, trustLevelSchema, visibilityLevelSchema } from '@/lib/validation/schemas';
 
 // ============================================
 // TOOL INPUT/OUTPUT SCHEMAS
@@ -14,12 +14,12 @@ export const searchPlacesInputSchema = z.object({
   query: z.string().optional(),
   filters: z
     .object({
-      category: z.nativeEnum(PlaceCategory).optional(),
+      category: placeCategorySchema.optional(),
       subcategory: z.string().optional(),
       region: z.string().optional(),
       locality: z.string().optional(),
-      status: z.nativeEnum(PlaceStatus).optional(),
-      trustLevel: z.nativeEnum(TrustLevel).optional(),
+      status: placeStatusSchema.optional(),
+      trustLevel: trustLevelSchema.optional(),
       minDifficulty: z.number().int().min(1).max(5).optional(),
       maxDifficulty: z.number().int().min(1).max(5).optional(),
       minDistanceKm: z.number().positive().optional(),
@@ -60,7 +60,7 @@ export const placeResultSchema = z.object({
   name: z.string(),
   slug: z.string(),
   shortDescription: z.string().nullable(),
-  category: z.nativeEnum(PlaceCategory),
+  category: placeCategorySchema,
   subcategory: z.string().nullable(),
   latitude: z.number(),
   longitude: z.number(),
@@ -71,10 +71,10 @@ export const placeResultSchema = z.object({
   durationHours: z.number().nullable(),
   elevationM: z.number().int().nullable(),
   elevationGainM: z.number().int().nullable(),
-  status: z.nativeEnum(PlaceStatus),
+  status: placeStatusSchema,
   trustScore: z.number(),
-  trustLevel: z.nativeEnum(TrustLevel),
-  visibilityLevel: z.nativeEnum(VisibilityLevel),
+  trustLevel: trustLevelSchema,
+  visibilityLevel: visibilityLevelSchema,
   hasParking: z.boolean(),
   hasWater: z.boolean(),
   hasNetwork: z.boolean(),
@@ -97,7 +97,7 @@ export const findPlacesNearbyInputSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   radiusKm: z.number().positive().default(25),
-  category: z.nativeEnum(PlaceCategory).optional(),
+  category: placeCategorySchema.optional(),
   limit: z.number().int().positive().max(50).default(20),
   minTrustScore: z.number().min(0).max(100).optional(),
 });
@@ -517,7 +517,7 @@ export const getUserPreferencesInputSchema = z.object({
 });
 
 export const getUserPreferencesOutputSchema = z.object({
-  preferredCategories: z.array(z.nativeEnum(PlaceCategory)),
+  preferredCategories: z.array(placeCategorySchema),
   preferredDifficulty: z.number().int().min(1).max(5).nullable(),
   maxTravelDistanceKm: z.number().positive().nullable(),
   preferredActivities: z.array(z.string()),
@@ -544,7 +544,7 @@ export const getSavedPlacesOutputSchema = z.array(
     placeId: z.string(),
     placeName: z.string(),
     placeSlug: z.string(),
-    category: z.nativeEnum(PlaceCategory),
+    category: placeCategorySchema,
     latitude: z.number(),
     longitude: z.number(),
     primaryPhotoUrl: z.string().nullable(),
@@ -565,7 +565,7 @@ export const getVisitedPlacesOutputSchema = z.array(
     placeId: z.string(),
     placeName: z.string(),
     placeSlug: z.string(),
-    category: z.nativeEnum(PlaceCategory),
+    category: placeCategorySchema,
     visitedAt: z.string().datetime(),
     rating: z.number().int().nullable(),
     photos: z.array(z.string()),
@@ -583,8 +583,8 @@ export const createItineraryInputSchema = z.object({
     .object({
       maxDailyDistanceKm: z.number().positive().optional(),
       maxDailyHours: z.number().positive().optional(),
-      preferredCategories: z.array(z.nativeEnum(PlaceCategory)).optional(),
-      avoidCategories: z.array(z.nativeEnum(PlaceCategory)).optional(),
+      preferredCategories: z.array(placeCategorySchema).optional(),
+      avoidCategories: z.array(placeCategorySchema).optional(),
       mustVisit: z.array(z.string().cuid()).optional(),
       transportMode: z.enum(['car', 'bike', 'bus', 'mixed']).optional(),
       budgetInr: z.number().int().positive().optional(),
@@ -599,7 +599,7 @@ export const itineraryItemOutputSchema = z.object({
   placeId: z.string(),
   placeName: z.string(),
   placeSlug: z.string(),
-  category: z.nativeEnum(PlaceCategory),
+  category: placeCategorySchema,
   latitude: z.number(),
   longitude: z.number(),
   startTime: z.string().nullable(),
@@ -632,13 +632,13 @@ export const rankCandidatesInputSchema = z.object({
     z.object({
       placeId: z.string(),
       placeName: z.string(),
-      category: z.nativeEnum(PlaceCategory),
+      category: placeCategorySchema,
       latitude: z.number(),
       longitude: z.number(),
       distanceKm: z.number().optional(),
       difficulty: z.number().int().nullable(),
       trustScore: z.number(),
-      status: z.nativeEnum(PlaceStatus),
+      status: placeStatusSchema,
       hasParking: z.boolean(),
       hasWater: z.boolean(),
       crowdLevel: z.number().int().nullable(),
@@ -647,7 +647,7 @@ export const rankCandidatesInputSchema = z.object({
   ),
   preferences: z
     .object({
-      preferredCategories: z.array(z.nativeEnum(PlaceCategory)).optional(),
+      preferredCategories: z.array(placeCategorySchema).optional(),
       preferredDifficulty: z.number().int().min(1).max(5).optional(),
       maxDistanceKm: z.number().positive().optional(),
       avoidCrowds: z.boolean().optional(),

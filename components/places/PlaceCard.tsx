@@ -1,6 +1,6 @@
 // Place Card Component
 import Link from 'next/link';
-import { PlaceCategory, PlaceStatus, TrustLevel } from '@prisma/client';
+import { place_category, place_status, trust_level } from '@prisma/client';
 import { cn, formatDistance, getInitials } from '@/lib/utils';
 
 interface PlaceCardProps {
@@ -9,14 +9,14 @@ interface PlaceCardProps {
     name: string;
     slug: string;
     shortDescription: string | null;
-    category: PlaceCategory;
+    category: place_category;
     latitude: number;
     longitude: number;
     difficulty: number | null;
     trailDistanceKm: number | null;
-    status: PlaceStatus;
+    status: place_status;
     trustScore: number;
-    trustLevel: TrustLevel;
+    trustLevel: trust_level;
     hasParking: boolean;
     hasWater: boolean;
     hasNetwork: boolean;
@@ -27,7 +27,7 @@ interface PlaceCardProps {
   variant?: 'default' | 'compact' | 'featured';
 }
 
-const categoryLabels: Record<PlaceCategory, string> = {
+const categoryLabels: Record<place_category, string> = {
   TREK: 'Trek',
   HIKE: 'Hike',
   WATERFALL: 'Waterfall',
@@ -43,7 +43,7 @@ const categoryLabels: Record<PlaceCategory, string> = {
   HIDDEN_GEM: 'Hidden Gem',
 };
 
-const categoryIcons: Record<PlaceCategory, string> = {
+const categoryIcons: Record<place_category, string> = {
   TREK: '🏔️',
   HIKE: '🥾',
   WATERFALL: '💧',

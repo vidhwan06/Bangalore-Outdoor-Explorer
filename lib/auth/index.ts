@@ -1,14 +1,14 @@
 // Authentication abstraction
 // This allows swapping auth providers (NextAuth, Clerk, Supabase, custom, etc.)
 
-import { UserRole } from '@prisma/client';
+import { user_role } from '@prisma/client';
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string | null;
   avatarUrl: string | null;
-  role: UserRole;
+  role: user_role;
   emailVerified: Date | null;
 }
 
@@ -41,7 +41,7 @@ export interface AuthProvider {
   authenticateWithProvider(provider: string, token: string): Promise<AuthUser | null>;
 
   // Authorization
-  hasRole(user: AuthUser, roles: UserRole[]): boolean;
+  hasRole(user: AuthUser, roles: user_role[]): boolean;
   canAccess(user: AuthUser, resource: string, action: string): boolean;
 
   // Email verification
@@ -76,26 +76,26 @@ export interface AuthCallbacks {
 }
 
 // Role hierarchy for authorization
-export const ROLE_HIERARCHY: Record<UserRole, number> = {
+export const ROLE_HIERARCHY: Record<user_role, number> = {
   USER: 0,
   CONTRIBUTOR: 1,
   MODERATOR: 2,
   ADMIN: 3,
 };
 
-export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): boolean {
+export function hasMinimumRole(userRole: user_role, requiredRole: user_role): boolean {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
 }
 
-export function canModerate(userRole: UserRole): boolean {
+export function canModerate(userRole: user_role): boolean {
   return hasMinimumRole(userRole, 'MODERATOR');
 }
 
-export function canAdmin(userRole: UserRole): boolean {
+export function canAdmin(userRole: user_role): boolean {
   return hasMinimumRole(userRole, 'ADMIN');
 }
 
-export function canContribute(userRole: UserRole): boolean {
+export function canContribute(userRole: user_role): boolean {
   return hasMinimumRole(userRole, 'CONTRIBUTOR');
 }
 
@@ -119,7 +119,7 @@ export type Permission =
   | 'badge:manage'
   | 'analytics:view';
 
-export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+export const ROLE_PERMISSIONS: Record<user_role, Permission[]> = {
   USER: [
     'place:read',
     'trail:create',
@@ -176,6 +176,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
 };
 
-export function hasPermission(userRole: UserRole, permission: Permission): boolean {
+export function hasPermission(userRole: user_role, permission: Permission): boolean {
   return ROLE_PERMISSIONS[userRole]?.includes(permission) ?? false;
 }
