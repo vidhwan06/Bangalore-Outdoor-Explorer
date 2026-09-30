@@ -57,11 +57,13 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
   const [searchOrigin, setSearchOrigin] = useState<DiscoveryOrigin | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [resultMode, setResultMode] = useState<DiscoveryResultMode>('radius');
+  const [fitBoundsDone, setFitBoundsDone] = useState(false);
 
   // Guards result application across both flows: whichever request settles
   // last in *intent* order wins — an older response can never overwrite a
   // newer one (see runSearch / handleViewportResults).
   const resultsSequenceRef = useRef(0);
+  const hasInitialFitRunRef = useRef(false);
 
   const handleValuesChange = useCallback((patch: Partial<DiscoveryFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -81,6 +83,15 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
     setStatus('success');
     setResultMode(mode);
     setSelectedPlaceId(null);
+
+    // Trigger one-time auto-fit to the initial radius-search results.
+    if (mode === 'radius' && !hasInitialFitRunRef.current) {
+      hasInitialFitRunRef.current = true;
+      setFitBoundsDone(true);
+      // Reset after the map completes the fit so the flag is available if
+      // the component remounts (the ref persists for the session).
+      // The onFitBoundsComplete callback will reset fitBoundsDone.
+    }
   }, []);
 
   // Viewport (bounds) discovery: debounce, aborts and stale-response
@@ -260,6 +271,8 @@ export function ExploreDiscovery({ initialCategory }: ExploreDiscoveryProps) {
               onPlaceSelect={setSelectedPlaceId}
               onBoundsChange={handleBoundsChange}
               loading={viewportStatus === 'loading'}
+              fitBounds={fitBoundsDone}
+              onFitBoundsComplete={() => setFitBoundsDone(false)}
               className="h-full min-h-[24rem]"
             />
           </aside>

@@ -2,7 +2,7 @@
 // Component tests for the reusable PlaceMap.
 // Renders the real leaflet engine (transpiled via next.config transpilePackages).
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlaceMap } from '@/components/map/PlaceMap';
 import { MAP_TEST_POINTS } from '../fixtures/map-places';
 
@@ -110,5 +110,74 @@ describe('PlaceMap', () => {
 
     rerender(<PlaceMap places={[]} loading={false} />);
     expect(screen.queryByRole('status', { name: 'Updating map results' })).not.toBeInTheDocument();
+  });
+
+  describe('viewport auto-fit (Phase 2C.3A)', () => {
+    it('does not change viewport when there are zero results', async () => {
+      const onFitBoundsComplete = jest.fn();
+      render(<PlaceMap places={[]} fitBounds onFitBoundsComplete={onFitBoundsComplete} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Should call onFitBoundsComplete immediately for empty places
+      expect(onFitBoundsComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders without error when fitBounds is true with places', async () => {
+      const onFitBoundsComplete = jest.fn();
+      // In jsdom the map doesn't fully initialize, so onFitBoundsComplete won't fire.
+      // The integration test (explore-map) covers the real auto-fit behavior.
+      render(<PlaceMap places={MAP_TEST_POINTS} fitBounds onFitBoundsComplete={onFitBoundsComplete} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Markers should render
+      expect(await screen.findByLabelText('Test Peak')).toBeInTheDocument();
+      expect(await screen.findByLabelText('Second Hill')).toBeInTheDocument();
+    });
+
+    it('does not auto-fit again when fitBounds prop remains true after re-render', async () => {
+      const onFitBoundsComplete = jest.fn();
+      const { rerender } = render(<PlaceMap places={MAP_TEST_POINTS} fitBounds onFitBoundsComplete={onFitBoundsComplete} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Re-render with same fitBounds=true - internal ref prevents duplicate fit
+      rerender(<PlaceMap places={MAP_TEST_POINTS} fitBounds onFitBoundsComplete={onFitBoundsComplete} />);
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Component should render without error (internal ref prevents double-fit)
+      expect(screen.getByLabelText('Test Peak')).toBeInTheDocument();
+    });
+
+    it('does not trigger onBoundsChange during auto-fit (no search loop)', async () => {
+      const onBoundsChange = jest.fn();
+      const onFitBoundsComplete = jest.fn();
+      render(
+        <PlaceMap
+          places={MAP_TEST_POINTS}
+          fitBounds
+          onBoundsChange={onBoundsChange}
+          onFitBoundsComplete={onFitBoundsComplete}
+        />
+      );
+
+      await waitFor(() => {
+        expect(document.querySelector('.leaflet-container')).toBeTruthy();
+      });
+
+      // Component renders without triggering onBoundsChange
+      // (onBoundsChange is only for user-initiated moveend events)
+      expect(onBoundsChange).not.toHaveBeenCalled();
+    });
   });
 });

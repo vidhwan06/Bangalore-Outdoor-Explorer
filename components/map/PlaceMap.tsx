@@ -44,6 +44,13 @@ export interface PlaceMapProps {
   onBoundsChange?: (bounds: MapBounds) => void;
   /** Shows a subtle, non-blocking overlay while viewport results load. */
   loading?: boolean;
+  /**
+   * When true, fit the map bounds to the current places on the next render.
+   * Used once for the initial radius-search results.
+   */
+  fitBounds?: boolean;
+  /** Called after fitBounds completes, so the parent can reset the flag. */
+  onFitBoundsComplete?: () => void;
   /** CSS height of the map box. Defaults to filling its container. */
   height?: string;
   /** Extra classes for the map box (sizing, layout). */
@@ -58,6 +65,8 @@ export function PlaceMap({
   onPlaceSelect,
   onBoundsChange,
   loading,
+  fitBounds,
+  onFitBoundsComplete,
   height,
   className,
 }: PlaceMapProps) {
@@ -79,6 +88,8 @@ export function PlaceMap({
         selectedPlaceId={selectedPlaceId}
         onPlaceSelect={onPlaceSelect}
         onBoundsChange={onBoundsChange}
+        fitBounds={fitBounds}
+        onFitBoundsComplete={onFitBoundsComplete}
       />
       {loading && (
         <div

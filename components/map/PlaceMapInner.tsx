@@ -9,6 +9,7 @@ import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet';
 import type { MapPlaceLocation, MapPlacePoint } from '@/features/places/map-places';
 import { MapBoundsReporter } from './MapBoundsReporter';
 import type { PlaceMapCenter, PlaceMapProps } from './PlaceMap';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type PlottablePlace = Omit<MapPlacePoint, 'location'> & {
   location: Extract<MapPlaceLocation, { latitude: number }>;
@@ -87,15 +88,68 @@ export default function PlaceMapInner({
   selectedPlaceId,
   onPlaceSelect,
   onBoundsChange,
+  fitBounds,
+  onFitBoundsComplete,
 }: PlaceMapProps) {
   const plottablePlaces = places.filter(isPlottable);
   const resolvedCenter = resolveCenter(center, plottablePlaces);
   const resolvedZoom = zoom ?? (plottablePlaces.length > 0 ? 9 : 2);
 
+  const mapRef = useRef<L.Map | null>(null);
+  const fitBoundsDoneRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
+
+  // Set mapReady after the map ref is attached (useLayoutEffect avoids act warnings).
+  useLayoutEffect(() => {
+    if (mapRef.current) {
+      setMapReady(true);
+    }
+  }, []);
+
+  // One-time fitBounds to the current markers after the map initializes.
+  useEffect(() => {
+    if (!fitBounds || fitBoundsDoneRef.current) {
+      return;
+    }
+    if (plottablePlaces.length === 0) {
+      // No markers to fit to — nothing to do. Call completion immediately.
+      onFitBoundsComplete?.();
+      fitBoundsDoneRef.current = true;
+      return;
+    }
+    if (!mapReady || !mapRef.current) {
+      // Map not ready yet; will retry when mapReady becomes true.
+      return;
+    }
+
+    const latLngs = plottablePlaces.map((place) => [
+      place.location.latitude,
+      place.location.longitude,
+    ] as L.LatLngExpression);
+
+    const bounds = L.latLngBounds(latLngs);
+
+    if (plottablePlaces.length === 1) {
+      // Single marker: center on it with a sensible zoom.
+      mapRef.current.setView(latLngs[0], 13);
+    } else {
+      // Multiple markers: fit with padding.
+      mapRef.current.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+    }
+
+    fitBoundsDoneRef.current = true;
+    onFitBoundsComplete?.();
+  }, [fitBounds, plottablePlaces, onFitBoundsComplete, mapReady]);
+
   return (
     // center/zoom are the map's initial view (react-leaflet ignores later changes);
     // markers below are fully reactive to prop updates.
-    <MapContainer center={resolvedCenter} zoom={resolvedZoom} className="h-full w-full">
+    <MapContainer
+      ref={mapRef}
+      center={resolvedCenter}
+      zoom={resolvedZoom}
+      className="h-full w-full"
+    >
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
