@@ -34,6 +34,13 @@ export const nearbyPlaceSchema = z.object({
   status: placeStatusSchema,
   trustLevel: trustLevelSchema,
   visibilityLevel: visibilityLevelSchema,
+  trustScore: z.number(),
+  hasParking: z.boolean(),
+  hasWater: z.boolean(),
+  hasNetwork: z.boolean(),
+  permitRequired: z.boolean(),
+  trailDistanceKm: z.number().nullable(),
+  primaryPhotoUrl: z.string().nullable(),
 });
 
 export const nearbyPlacesResponseSchema = z.object({

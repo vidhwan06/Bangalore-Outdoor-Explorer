@@ -17,6 +17,13 @@ export function makeNearbyPlace(overrides: Partial<NearbyPlace> = {}): NearbyPla
     status: 'OPEN',
     trustLevel: 'VERIFIED',
     visibilityLevel: 'PUBLIC_EXACT',
+    trustScore: 95,
+    hasParking: true,
+    hasWater: true,
+    hasNetwork: true,
+    permitRequired: false,
+    trailDistanceKm: 5,
+    primaryPhotoUrl: null,
     ...overrides,
   };
 }

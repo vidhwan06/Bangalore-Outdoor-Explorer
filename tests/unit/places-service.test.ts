@@ -274,4 +274,89 @@ describe('Place Service', () => {
       );
     });
   });
+
+  describe('getFeaturedPlaces', () => {
+    const mockResult = {
+      data: [
+        {
+          id: '1',
+          name: 'Test Place',
+          slug: 'test-place',
+          category: 'TREK' as const,
+          shortDescription: 'A test place',
+          latitude: 12.9716,
+          longitude: 77.5946,
+          distanceMeters: 1000,
+          difficulty: 2,
+          status: 'OPEN' as const,
+          trustLevel: 'VERIFIED',
+          visibilityLevel: 'PUBLIC_EXACT',
+          trustScore: 95,
+          hasParking: true,
+          hasWater: true,
+          hasNetwork: true,
+          permitRequired: false,
+          trailDistanceKm: 5,
+          primaryPhotoUrl: null,
+        },
+      ],
+      pagination: { limit: 8, offset: 0, count: 1, hasMore: false },
+    };
+
+    beforeEach(() => {
+      mockFindNearbyPlaces.mockResolvedValue(mockResult);
+    });
+
+    it('calls searchNearby with Bengaluru center and 150km radius (clamped to 50km max)', async () => {
+      await placeService.getFeaturedPlaces(8);
+
+      expect(mockFindNearbyPlaces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 12.9716,
+          longitude: 77.5946,
+          radiusMeters: 50000, // clamped to MAX_RADIUS_METERS (50km)
+          limit: 8,
+          offset: 0,
+          status: 'OPEN',
+          category: undefined,
+          difficulty: undefined,
+        })
+      );
+    });
+
+    it('uses default limit of 8', async () => {
+      await placeService.getFeaturedPlaces();
+
+      expect(mockFindNearbyPlaces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 8,
+        })
+      );
+    });
+
+    it('respects custom limit', async () => {
+      await placeService.getFeaturedPlaces(4);
+
+      expect(mockFindNearbyPlaces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 4,
+        })
+      );
+    });
+
+    it('does not apply artificial ranking or trustScore ordering', async () => {
+      await placeService.getFeaturedPlaces(8);
+
+      // The underlying searchNearby orders by distanceMeters ASC
+      // No additional ordering by trustScore or artificial popularity
+      expect(mockFindNearbyPlaces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          radiusMeters: 50000, // clamped to MAX_RADIUS_METERS
+          status: 'OPEN',
+          offset: 0,
+          difficulty: undefined,
+        })
+      );
+    });
+  });
 });

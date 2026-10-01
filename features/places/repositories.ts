@@ -9,7 +9,7 @@ import {
   getLatitudeSQL,
   getLongitudeSQL,
 } from '@/lib/db/postgis';
-import type { place_category, place_status } from '@prisma/client';
+import type { place_category, place_status, trust_level, visibility_level } from '@prisma/client';
 
 export interface NearbyPlaceParams {
   latitude: number;
@@ -45,8 +45,15 @@ export interface PlaceResult {
   distanceMeters: number;
   difficulty: number | null;
   status: place_status;
-  trustLevel: string;
-  visibilityLevel: string;
+  trustLevel: trust_level;
+  visibilityLevel: visibility_level;
+  trustScore: number;
+  hasParking: boolean;
+  hasWater: boolean;
+  hasNetwork: boolean;
+  permitRequired: boolean;
+  trailDistanceKm: number | null;
+  primaryPhotoUrl: string | null;
 }
 
 export interface PaginatedResult<T> {
@@ -147,7 +154,14 @@ export async function findNearbyPlaces(
       difficulty,
       status,
       "trustLevel",
-      "visibilityLevel"
+      "visibilityLevel",
+      "trustScore",
+      "hasParking",
+      "hasWater",
+      "hasNetwork",
+      "permitRequired",
+      "trailDistanceKm",
+      "primaryPhotoUrl"
     FROM "Place"
     ${where}
       AND ${withinRadiusSQL}

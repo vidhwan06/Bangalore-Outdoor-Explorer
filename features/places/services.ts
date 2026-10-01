@@ -123,4 +123,19 @@ export const placeService = {
   async getBySlug(slug: string): Promise<PlaceDetailResult | null> {
     return findPlaceBySlug(slug);
   },
+
+  /**
+   * Get featured places for the homepage
+   * Uses the existing nearby search infrastructure with Bengaluru as center
+   * Orders by distance (closest first) - no special ranking
+   */
+  async getFeaturedPlaces(limit = 8): Promise<NearbySearchOutput> {
+    return this.searchNearby({
+      latitude: 12.9716,
+      longitude: 77.5946,
+      radiusMeters: 150000, // 150 km
+      limit,
+      status: 'OPEN',
+    });
+  },
 };
