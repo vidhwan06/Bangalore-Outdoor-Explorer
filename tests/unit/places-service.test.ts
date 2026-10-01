@@ -307,7 +307,7 @@ describe('Place Service', () => {
       mockFindNearbyPlaces.mockResolvedValue(mockResult);
     });
 
-    it('calls searchNearby with Bengaluru center and 150km radius (clamped to 50km max)', async () => {
+    it('calls searchNearby with Bengaluru center at the maximum 50km radius', async () => {
       await placeService.getFeaturedPlaces(8);
 
       expect(mockFindNearbyPlaces).toHaveBeenCalledWith(

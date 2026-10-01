@@ -4,6 +4,7 @@
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlaceMap } from '@/components/map/PlaceMap';
+import { escapeHtml } from '@/components/map/PlaceMapInner';
 import { MAP_TEST_POINTS } from '../fixtures/map-places';
 
 describe('PlaceMap', () => {
@@ -110,6 +111,41 @@ describe('PlaceMap', () => {
 
     rerender(<PlaceMap places={[]} loading={false} />);
     expect(screen.queryByRole('status', { name: 'Updating map results' })).not.toBeInTheDocument();
+  });
+
+  describe('marker HTML escaping (security)', () => {
+    const MALICIOUS_NAME = `Evil "Quoted" <script>alert('x')</script> & 'Apostrophe'`;
+
+    it('escapes every special character in the shared escape helper', () => {
+      expect(escapeHtml(`& < > " '`)).toBe('&amp; &lt; &gt; &quot; &#39;');
+      expect(escapeHtml('Nandi Hills 40')).toBe('Nandi Hills 40');
+    });
+
+    it('renders a special-character place name without breaking out of the marker HTML', async () => {
+      const { container } = render(
+        <PlaceMap
+          places={[
+            {
+              id: 'evil-place',
+              name: MALICIOUS_NAME,
+              location: { kind: 'exact', latitude: 12.9, longitude: 77.5 },
+            },
+          ]}
+        />
+      );
+
+      // The full name round-trips through the aria-label attribute — this only
+      // works when the divIcon HTML escaped every quote and angle bracket.
+      const marker = await screen.findByLabelText(MALICIOUS_NAME);
+      expect(marker).toBeInTheDocument();
+
+      // The injected <script> must never become a real element in the map.
+      expect(container.querySelectorAll('script')).toHaveLength(0);
+
+      // The escaped entities are what actually reaches the divIcon HTML.
+      expect(container.innerHTML).toContain('&quot;');
+      expect(container.innerHTML).toContain('&amp;');
+    });
   });
 
   describe('viewport auto-fit (Phase 2C.3A)', () => {

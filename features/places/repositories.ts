@@ -225,7 +225,14 @@ export async function findPlacesInBounds(
       difficulty,
       status,
       "trustLevel",
-      "visibilityLevel"
+      "visibilityLevel",
+      "trustScore",
+      "hasParking",
+      "hasWater",
+      "hasNetwork",
+      "permitRequired",
+      "trailDistanceKm",
+      "primaryPhotoUrl"
     FROM "Place"
     ${where}
       AND ${withinBoundsSQL}
@@ -278,7 +285,14 @@ export async function findPlaceById(id: string): Promise<PlaceResult | null> {
       difficulty,
       status,
       "trustLevel",
-      "visibilityLevel"
+      "visibilityLevel",
+      "trustScore",
+      "hasParking",
+      "hasWater",
+      "hasNetwork",
+      "permitRequired",
+      "trailDistanceKm",
+      "primaryPhotoUrl"
     FROM "Place"
     WHERE id = $1
       AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
@@ -307,7 +321,14 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceDetailResult |
       difficulty,
       status,
       "trustLevel",
-      "visibilityLevel"
+      "visibilityLevel",
+      "trustScore",
+      "hasParking",
+      "hasWater",
+      "hasNetwork",
+      "permitRequired",
+      "trailDistanceKm",
+      "primaryPhotoUrl"
     FROM "Place"
     WHERE slug = $1
       AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')

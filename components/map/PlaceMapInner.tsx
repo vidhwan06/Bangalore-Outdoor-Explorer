@@ -20,14 +20,15 @@ function isPlottable(place: MapPlacePoint): place is PlottablePlace {
 }
 
 const ESCAPES: Record<string, string> = {
-  '&': '&',
-  '<': '<',
-  '>': '>',
-  '"': '"',
-  "'": '\'',
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
 };
 
-function escapeHtml(value: string): string {
+/** Escapes a value for safe interpolation into marker HTML (aria-labels). */
+export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ESCAPES[character] ?? character);
 }
 
@@ -63,32 +64,6 @@ function buildMarkerIcon(place: PlottablePlace, selected: boolean): L.DivIcon {
   });
 }
 
-/**
- * Builds a cluster icon for clustered points.
- * Shows the count of markers in the cluster.
- */
-function buildClusterIcon(count: number): L.DivIcon {
-  let size = 40;
-  let background = '#16a34a';
-  let border = '2px solid #ffffff';
-
-  // Adjust size and color based on cluster size
-  if (count >= 100) {
-    size = 50;
-    background = '#dc2626'; // red for large clusters
-  } else if (count >= 10) {
-    size = 45;
-    background = '#ea580c'; // orange for medium clusters
-  }
-
-  return L.divIcon({
-    className: 'marker-cluster',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    html: `<div class="marker-cluster-inner" style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:${background};border:${border};box-shadow:0 1px 4px rgba(0,0,0,0.4);color:white;font-weight:600;font-size:${Math.max(12, size * 0.35)}px;">${count}</div>`,
-  });
-}
-
 function resolveCenter(
   center: PlaceMapCenter | undefined,
   places: PlottablePlace[]
@@ -107,19 +82,29 @@ function resolveCenter(
   return [0, 0];
 }
 
+/** A single item on the map: an individual marker or a group of clustered places. */
+type ClusteredItem =
+  | { type: 'marker'; place: PlottablePlace }
+  | { type: 'cluster'; count: number; places: PlottablePlace[]; center: [number, number] };
+
 /**
  * Simple grid-based clustering for client-side clustering.
  * Groups nearby points into clusters based on zoom level.
+ *
+ * Product behaviour:
+ * - zoom >= 9 (the explore default): every place plots individually — no clustering.
+ * - zoom < 9 (zoomed out): overlapping places group into a cluster that expands on click.
+ * - a cell containing the selected place is never clustered, so the selected
+ *   marker always stays individually visible and in sync with the place cards.
  */
 function clusterPlaces(
   places: PlottablePlace[],
-  zoom: number
-): Array<{ type: 'marker'; place: PlottablePlace } | { type: 'cluster'; count: number; places: PlottablePlace[]; center: [number, number] }> {
+  zoom: number,
+  selectedPlaceId?: string | null
+): ClusteredItem[] {
   if (places.length === 0) return [];
 
-  // At high zoom levels, don't cluster
-  // Tests run at zoom 9-10, so disable clustering at zoom >= 9 to match test expectations
-  // In production, clustering activates at zoom < 9 for dense areas
+  // Individual markers at close range; clustering only engages when zoomed out.
   if (zoom >= 9) {
     return places.map(place => ({ type: 'marker' as const, place }));
   }
@@ -140,11 +125,18 @@ function clusterPlaces(
     grid.get(key)!.push(place);
   }
 
-  const result: Array<{ type: 'marker'; place: PlottablePlace } | { type: 'cluster'; count: number; places: PlottablePlace[]; center: [number, number] }> = [];
+  const result: ClusteredItem[] = [];
 
   for (const [, cellPlaces] of grid) {
-    if (cellPlaces.length === 1) {
-      result.push({ type: 'marker', place: cellPlaces[0] });
+    const containsSelection =
+      selectedPlaceId != null && cellPlaces.some((place) => place.id === selectedPlaceId);
+
+    if (cellPlaces.length === 1 || containsSelection) {
+      // Never hide the selected marker inside a cluster: plot the cell's
+      // members individually so marker/card selection stays synchronized.
+      for (const place of cellPlaces) {
+        result.push({ type: 'marker', place });
+      }
     } else {
       // Calculate cluster center
       const centerLat = cellPlaces.reduce((sum, p) => sum + p.location.latitude, 0) / cellPlaces.length;
@@ -181,10 +173,10 @@ export default function PlaceMapInner({
   const [mapReady, setMapReady] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(resolvedZoom);
 
-  // Compute clustered markers based on current zoom
+  // Compute clustered markers based on current zoom and selection
   const clusteredItems = useMemo(
-    () => clusterPlaces(plottablePlaces, currentZoom),
-    [plottablePlaces, currentZoom]
+    () => clusterPlaces(plottablePlaces, currentZoom, selectedPlaceId),
+    [plottablePlaces, currentZoom, selectedPlaceId]
   );
 
   // Set mapReady after the map ref is attached (useLayoutEffect avoids act warnings).

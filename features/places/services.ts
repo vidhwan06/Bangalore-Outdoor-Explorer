@@ -126,14 +126,16 @@ export const placeService = {
 
   /**
    * Get featured places for the homepage
-   * Uses the existing nearby search infrastructure with Bengaluru as center
-   * Orders by distance (closest first) - no special ranking
+   * Uses the existing nearby search infrastructure with Bengaluru as centre.
+   * Returns OPEN destinations ordered by distance (closest first) — no
+   * popularity/trustScore ranking. searchNearby enforces the project's
+   * MAX_RADIUS_METERS (50 km) ceiling regardless of the value requested here.
    */
   async getFeaturedPlaces(limit = 8): Promise<NearbySearchOutput> {
     return this.searchNearby({
       latitude: 12.9716,
       longitude: 77.5946,
-      radiusMeters: 150000, // 150 km
+      radiusMeters: 50000, // MAX_RADIUS_METERS — the project's maximum search radius
       limit,
       status: 'OPEN',
     });
