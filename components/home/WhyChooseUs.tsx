@@ -4,58 +4,59 @@ import { cn } from '@/lib/utils';
 const features = [
   {
     icon: '✅',
-    title: 'Verified Information',
+    title: 'Verified Sources & Trust Scores',
     description:
-      'Official sources, verified contributors & community cross-checks. Every destination has a trust score.',
+      'Official sources tracked per destination. Every place has a trust level (Verified, Community Submitted, etc.) and trust score.',
     color: 'green',
   },
   {
     icon: '🗺️',
     title: 'Map-First Discovery',
     description:
-      'Interactive map with clustered markers, filters, offline support & GPS navigation to trailheads.',
+      'Interactive map with clustered markers, category/difficulty/radius filters, and viewport-based discovery.',
     color: 'blue',
-  },
-  {
-    icon: '🌤️',
-    title: 'Real-Time Conditions',
-    description:
-      'Live weather, trail conditions, crowd levels & hazard alerts from official & community sources.',
-    color: 'yellow',
-  },
-  {
-    icon: '🎫',
-    title: 'Permit & Access Info',
-    description:
-      'Up-to-date permit requirements, entry fees, timings, group limits & booking links.',
-    color: 'purple',
-  },
-  {
-    icon: '🍽️',
-    title: 'Nearby Essentials',
-    description: 'Food, fuel, hospitals, parking, water & accommodation near every destination.',
-    color: 'orange',
-  },
-  {
-    icon: '🤖',
-    title: 'AI Trip Planner',
-    description:
-      'Constraint-based itinerary generation with deterministic ranking — not hallucinated suggestions.',
-    color: 'pink',
   },
   {
     icon: '🔒',
     title: 'Location Privacy',
     description:
-      'Sensitive ecosystems & private property protected with approximate coordinates & access controls.',
+      'Sensitive destinations use approximate coordinates. Visibility levels control public vs. restricted access.',
     color: 'red',
   },
   {
-    icon: '👥',
-    title: 'Community Powered',
+    icon: '📍',
+    title: 'Structured Place Data',
     description:
-      'Visit logs, trail reports, photos & verification — all attributed, timestamped & moderated.',
+      'Rich destination records: difficulty, distance, elevation, opening hours, entry fees, parking, water, network, permits.',
+    color: 'purple',
+  },
+  {
+    icon: '🔍',
+    title: 'Powerful Search & Filters',
+    description:
+      'Filter by category, difficulty, distance, status. Search within 50 km radius or explore by map viewport.',
+    color: 'orange',
+  },
+  {
+    icon: '📸',
+    title: 'Photos & Official Sources',
+    description:
+      'Multiple photos per destination with primary image. Verified official sources linked with contact details.',
     color: 'indigo',
+  },
+  {
+    icon: '📱',
+    title: 'Responsive & Accessible',
+    description:
+      'Mobile-first design with map/list toggle, keyboard navigation, and semantic HTML for screen readers.',
+    color: 'teal',
+  },
+  {
+    icon: '🛠️',
+    title: 'Built for Extensibility',
+    description:
+      'Provider abstractions for maps, weather, routing, storage, auth. Ready for Phase 3 conditions, routes, and AI features.',
+    color: 'yellow',
   },
 ] as const;
 
@@ -68,8 +69,8 @@ export function WhyChooseUs() {
             Why Bengaluru Outdoor Explorer?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-surface-600 dark:text-surface-400">
-            Not just a directory. A living platform built on trust, real-time data & community
-            verification.
+            A trust-first platform for outdoor discovery. Structured data, map-based exploration, and
+            privacy-aware design — built on PostgreSQL/PostGIS with a modular architecture.
           </p>
         </div>
 

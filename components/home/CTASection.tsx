@@ -11,8 +11,8 @@ export function CTASection() {
               Ready to Explore?
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-primary-100">
-              Join thousands of outdoor enthusiasts discovering Bengaluru's best kept secrets. Free
-              to use. Community driven. Always current.
+              Discover treks, waterfalls, forts, and hidden gems near Bengaluru. Free to browse.
+              No account required. Community-driven roadmap.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -23,15 +23,15 @@ export function CTASection() {
                 Start Exploring Now
               </Link>
               <Link
-                href="/map"
+                href="/explore"
                 className="btn w-full border-2 border-white px-8 py-3 text-base text-white hover:bg-white/10 active:bg-white/20 sm:w-auto"
               >
-                Open Interactive Map
+                Open Map View
               </Link>
             </div>
 
             <p className="mt-6 text-sm text-primary-200">
-              No account required to browse • Sign up to save places, log visits & contribute
+              Browse without an account • Future features: save places, log visits, contribute
             </p>
           </div>
 

@@ -20,7 +20,7 @@ export function HeroSection() {
               <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" />
               <span className="bg-primary relative inline-flex h-2 w-2 rounded-full" />
             </span>
-            Live outdoor data • Community verified
+            Database-backed destinations • Within 50 km of Bengaluru
           </span>
 
           <h1 className="mb-6 text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl lg:text-6xl dark:text-surface-50">
@@ -30,40 +30,40 @@ export function HeroSection() {
           </h1>
 
           <p className="mx-auto mb-8 max-w-2xl text-lg text-surface-600 dark:text-surface-400">
-            Discover treks, waterfalls, lakes, forts & hidden gems within 150km of Bengaluru.
-            Real-time conditions, permits, routes & community insights — everything you need before
-            you leave.
+            Discover treks, waterfalls, hills, forts & hidden gems near Bengaluru.
+            Structured data, verified sources, and map-first exploration — everything you need
+            before you leave.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/explore" className="btn-primary w-full px-8 py-3 text-base sm:w-auto">
               Start Exploring
             </Link>
-            <Link href="/map" className="btn-outline w-full px-8 py-3 text-base sm:w-auto">
+            <Link href="/explore" className="btn-outline w-full px-8 py-3 text-base sm:w-auto">
               Open Map
             </Link>
           </div>
 
           <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-surface-500 dark:text-surface-400">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-surface-900 dark:text-surface-500">150km</span>
-              <span>Radius Coverage</span>
+              <span className="font-semibold text-surface-900 dark:text-surface-500">50 km</span>
+              <span>Search Radius</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-surface-900 dark:text-surface-500">13</span>
-              <span>Categories</span>
+              <span>Categories Defined</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-surface-900 dark:text-surface-500">
-                Real-time
+                Map-First
               </span>
-              <span>Conditions</span>
+              <span>Discovery</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-surface-900 dark:text-surface-500">
-                Community
+                Trust
               </span>
-              <span>Verified</span>
+              <span>Scores</span>
             </div>
           </div>
         </div>

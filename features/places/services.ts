@@ -6,6 +6,7 @@ import {
   findPlacesInBounds,
   findPlaceById,
   findPlaceBySlug,
+  getCategoryCounts,
   type NearbyPlaceParams,
   type BoundsParams,
   type PaginatedResult,
@@ -139,5 +140,13 @@ export const placeService = {
       limit,
       status: 'OPEN',
     });
+  },
+
+  /**
+   * Get count of places per category for the homepage category explorer
+   * Returns counts for all 13 categories (including zero counts)
+   */
+  async getCategoryCounts(): Promise<Record<string, number>> {
+    return getCategoryCounts();
   },
 };

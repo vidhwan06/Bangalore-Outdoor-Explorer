@@ -11,14 +11,22 @@ import { makeNearbyPlace } from '../fixtures/nearby-places';
 jest.mock('@/features/places/services', () => ({
   placeService: {
     getFeaturedPlaces: jest.fn(),
+    getCategoryCounts: jest.fn(),
   },
 }));
 
 const getFeaturedPlaces = placeService.getFeaturedPlaces as jest.MockedFunction<
   typeof placeService.getFeaturedPlaces
 >;
+const getCategoryCounts = placeService.getCategoryCounts as jest.MockedFunction<
+  typeof placeService.getCategoryCounts
+>;
 
 describe('HomePage featured places', () => {
+  beforeEach(() => {
+    getCategoryCounts.mockResolvedValue({});
+  });
+
   it('renders database-backed featured places when the database is available', async () => {
     getFeaturedPlaces.mockResolvedValue({
       data: [
@@ -35,6 +43,7 @@ describe('HomePage featured places', () => {
     render(await HomePage());
 
     expect(getFeaturedPlaces).toHaveBeenCalledWith(8);
+    expect(getCategoryCounts).toHaveBeenCalled();
     expect(screen.getByText('Savandurga Hill')).toBeInTheDocument();
     expect(screen.getByTitle('Distance from Bengaluru')).toHaveTextContent('50.0 km');
   });
@@ -42,6 +51,7 @@ describe('HomePage featured places', () => {
   it('falls back to the empty state when the database is unavailable', async () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     getFeaturedPlaces.mockRejectedValue(new Error('database unreachable'));
+    getCategoryCounts.mockRejectedValue(new Error('database unreachable'));
 
     render(await HomePage());
 
@@ -52,7 +62,7 @@ describe('HomePage featured places', () => {
     expect(screen.getByRole('heading', { name: 'Open Destinations Near Bengaluru' })).toBeInTheDocument();
     // The failure stays visible server-side.
     expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to load featured places'),
+      expect.stringContaining('Failed to load homepage data'),
       expect.any(Error)
     );
 

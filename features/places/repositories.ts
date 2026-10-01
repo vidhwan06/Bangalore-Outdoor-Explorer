@@ -349,3 +349,40 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceDetailResult |
 
   return { ...place, sources };
 }
+
+/**
+ * Gets count of places per category for public discovery
+ * Only includes places with public visibility levels
+ */
+export async function getCategoryCounts(): Promise<Record<place_category, number>> {
+  const query = `
+    SELECT category, COUNT(*) as count
+    FROM "Place"
+    WHERE "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
+    GROUP BY category
+  `;
+
+  const rows = await prisma.$queryRawUnsafe<{ category: place_category; count: bigint }[]>(query);
+
+  const counts: Record<place_category, number> = {
+    TREK: 0,
+    HIKE: 0,
+    WATERFALL: 0,
+    LAKE: 0,
+    MOUNTAIN: 0,
+    FOREST: 0,
+    CAVE: 0,
+    FORT: 0,
+    VIEWPOINT: 0,
+    CAMPING: 0,
+    CYCLING: 0,
+    SCENIC_DRIVE: 0,
+    HIDDEN_GEM: 0,
+  };
+
+  for (const row of rows) {
+    counts[row.category] = Number(row.count);
+  }
+
+  return counts;
+}
