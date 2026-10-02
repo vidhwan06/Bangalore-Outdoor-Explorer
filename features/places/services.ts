@@ -7,12 +7,16 @@ import {
   findPlaceById,
   findPlaceBySlug,
   getCategoryCounts,
+  createPlace,
+  upsertPlace,
   type NearbyPlaceParams,
   type BoundsParams,
   type PaginatedResult,
   type PlaceResult,
   type PlaceDetailResult,
+  type CreatePlaceInput,
 } from './repositories';
+import { placeCreateSchema, type PlaceCreateInput } from '@/lib/validation/schemas';
 
 export interface NearbySearchInput {
   latitude: number;
@@ -148,5 +152,23 @@ export const placeService = {
    */
   async getCategoryCounts(): Promise<Record<string, number>> {
     return getCategoryCounts();
+  },
+
+  /**
+   * Create a new place with validation.
+   * Validates input using placeCreateSchema, then calls repository createPlace.
+   */
+  async createPlace(input: PlaceCreateInput, userId?: string): Promise<PlaceResult> {
+    const validated = placeCreateSchema.parse(input);
+    return createPlace({ ...validated, createdById: userId });
+  },
+
+  /**
+   * Upsert a place by slug: inserts if not exists, updates if exists.
+   * Validates input using placeCreateSchema, then calls repository upsertPlace.
+   */
+  async upsertPlace(input: PlaceCreateInput, userId?: string): Promise<{ place: PlaceResult; created: boolean }> {
+    const validated = placeCreateSchema.parse(input);
+    return upsertPlace({ ...validated, createdById: userId });
   },
 };

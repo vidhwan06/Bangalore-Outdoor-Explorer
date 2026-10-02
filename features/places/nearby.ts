@@ -40,7 +40,8 @@ export const nearbyPlaceSchema = z.object({
   hasNetwork: z.boolean(),
   permitRequired: z.boolean(),
   trailDistanceKm: z.number().nullable(),
-  primaryPhotoUrl: z.string().nullable(),
+  // The Place table has no photo column yet; photos are a deferred feature.
+  primaryPhotoUrl: z.string().nullable().optional(),
 });
 
 export const nearbyPlacesResponseSchema = z.object({

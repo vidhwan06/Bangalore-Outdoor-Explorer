@@ -21,7 +21,8 @@ interface PlaceCardProps {
     hasWater: boolean;
     hasNetwork: boolean;
     permitRequired: boolean;
-    primaryPhotoUrl: string | null;
+    // Optional: the Place table has no photo column yet (photos deferred).
+    primaryPhotoUrl?: string | null;
     distanceKm?: number;
   };
   variant?: 'default' | 'compact' | 'featured';

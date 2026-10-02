@@ -8,8 +8,10 @@ import {
   getWithinBoundsSQL,
   getLatitudeSQL,
   getLongitudeSQL,
+  setPlaceLocation,
 } from '@/lib/db/postgis';
 import type { place_category, place_status, trust_level, visibility_level } from '@prisma/client';
+import { slugify } from '@/lib/utils';
 
 export interface NearbyPlaceParams {
   latitude: number;
@@ -53,7 +55,6 @@ export interface PlaceResult {
   hasNetwork: boolean;
   permitRequired: boolean;
   trailDistanceKm: number | null;
-  primaryPhotoUrl: string | null;
 }
 
 export interface PaginatedResult<T> {
@@ -160,8 +161,7 @@ export async function findNearbyPlaces(
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm",
-      "primaryPhotoUrl"
+      "trailDistanceKm"
     FROM "Place"
     ${where}
       AND ${withinRadiusSQL}
@@ -231,8 +231,7 @@ export async function findPlacesInBounds(
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm",
-      "primaryPhotoUrl"
+      "trailDistanceKm"
     FROM "Place"
     ${where}
       AND ${withinBoundsSQL}
@@ -291,8 +290,7 @@ export async function findPlaceById(id: string): Promise<PlaceResult | null> {
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm",
-      "primaryPhotoUrl"
+      "trailDistanceKm"
     FROM "Place"
     WHERE id = $1
       AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
@@ -327,8 +325,7 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceDetailResult |
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm",
-      "primaryPhotoUrl"
+      "trailDistanceKm"
     FROM "Place"
     WHERE slug = $1
       AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
@@ -385,4 +382,311 @@ export async function getCategoryCounts(): Promise<Record<place_category, number
   }
 
   return counts;
+}
+
+/**
+ * Creates a new place with PostGIS location.
+ * Uses the two-step pattern: Prisma create + raw SQL for geography point.
+ * Handles slug generation and collision resolution.
+ */
+export interface CreatePlaceInput {
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  shortDescription?: string | null;
+  category: place_category;
+  subcategory?: string | null;
+  latitude: number;
+  longitude: number;
+  region?: string | null;
+  locality?: string | null;
+  difficulty?: number | null;
+  trailDistanceKm?: number | null;
+  durationHours?: number | null;
+  elevationM?: number | null;
+  elevationGainM?: number | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
+  lastEntryTime?: string | null;
+  entryFeeInr?: number | null;
+  permitRequired?: boolean | null;
+  permitDetails?: string | null;
+  permitUrl?: string | null;
+  hasParking?: boolean | null;
+  parkingDetails?: string | null;
+  hasWater?: boolean | null;
+  waterDetails?: string | null;
+  hasNetwork?: boolean | null;
+  networkDetails?: string | null;
+  crowdLevel?: number | null;
+  bestSeasonStart?: number | null;
+  bestSeasonEnd?: number | null;
+  status?: place_status;
+  trustScore?: number | null;
+  trustLevel?: trust_level;
+  visibilityLevel?: visibility_level;
+  sourceReferences?: unknown;
+  createdById?: string | null;
+}
+
+/**
+ * Resolves a unique slug by checking for collisions and appending a suffix if needed.
+ * Returns the resolved slug.
+ */
+export async function resolveUniqueSlug(baseSlug: string): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const existing = await prisma.place.findUnique({ where: { slug } });
+    if (!existing) return slug;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
+  }
+}
+
+/**
+ * PostgreSQL columns that require explicit JSON casting in raw SQL.
+ */
+const JSON_COLUMNS = new Set<string>([
+  'sourceReferences',
+]);
+
+/**
+ * PostgreSQL enum column names that require explicit casting in raw SQL.
+ * Maps column names to their PostgreSQL enum type names.
+ */
+const ENUM_COLUMN_TYPES: Record<string, string> = {
+  category: 'place_category',
+  status: 'place_status',
+  trustLevel: 'trust_level',
+  visibilityLevel: 'visibility_level',
+};
+
+/**
+ * Creates a new place with the given input.
+ * Uses raw SQL insert because Place has Unsupported geography field.
+ * Returns the created place with coordinates in PlaceResult shape.
+ */
+export async function createPlace(input: CreatePlaceInput): Promise<PlaceResult> {
+  const { latitude, longitude, slug: providedSlug, createdById, ...rest } = input;
+
+  // Generate slug from name if not provided
+  const baseSlug = providedSlug ?? slugify(input.name);
+  const slug = await resolveUniqueSlug(baseSlug);
+
+  // Build the insert query dynamically based on provided fields
+  // The location is set to a temporary point, then updated with the real coordinates
+  // We use ST_SetSRID(ST_MakePoint(0, 0), 4326)::geography as placeholder
+  // and then update it with the real coordinates via setPlaceLocation
+
+  const columns = ['id', 'slug', 'name'];
+  const values = ['gen_random_uuid()::text', `$1`, `$2`];
+  const params: unknown[] = [slug, input.name];
+  let paramIndex = 3;
+
+  // Add optional fields that are provided
+  const optionalFields: Array<{ key: string; value: unknown; col: string }> = [
+    { key: 'description', value: rest.description, col: 'description' },
+    { key: 'shortDescription', value: rest.shortDescription, col: 'shortDescription' },
+    { key: 'category', value: rest.category, col: 'category' },
+    { key: 'subcategory', value: rest.subcategory, col: 'subcategory' },
+    { key: 'region', value: rest.region, col: 'region' },
+    { key: 'locality', value: rest.locality, col: 'locality' },
+    { key: 'difficulty', value: rest.difficulty, col: 'difficulty' },
+    { key: 'trailDistanceKm', value: rest.trailDistanceKm, col: 'trailDistanceKm' },
+    { key: 'durationHours', value: rest.durationHours, col: 'durationHours' },
+    { key: 'elevationM', value: rest.elevationM, col: 'elevationM' },
+    { key: 'elevationGainM', value: rest.elevationGainM, col: 'elevationGainM' },
+    { key: 'openingTime', value: rest.openingTime, col: 'openingTime' },
+    { key: 'closingTime', value: rest.closingTime, col: 'closingTime' },
+    { key: 'lastEntryTime', value: rest.lastEntryTime, col: 'lastEntryTime' },
+    { key: 'entryFeeInr', value: rest.entryFeeInr, col: 'entryFeeInr' },
+    { key: 'permitRequired', value: rest.permitRequired, col: 'permitRequired' },
+    { key: 'permitDetails', value: rest.permitDetails, col: 'permitDetails' },
+    { key: 'permitUrl', value: rest.permitUrl, col: 'permitUrl' },
+    { key: 'hasParking', value: rest.hasParking, col: 'hasParking' },
+    { key: 'parkingDetails', value: rest.parkingDetails, col: 'parkingDetails' },
+    { key: 'hasWater', value: rest.hasWater, col: 'hasWater' },
+    { key: 'waterDetails', value: rest.waterDetails, col: 'waterDetails' },
+    { key: 'hasNetwork', value: rest.hasNetwork, col: 'hasNetwork' },
+    { key: 'networkDetails', value: rest.networkDetails, col: 'networkDetails' },
+    { key: 'crowdLevel', value: rest.crowdLevel, col: 'crowdLevel' },
+    { key: 'bestSeasonStart', value: rest.bestSeasonStart, col: 'bestSeasonStart' },
+    { key: 'bestSeasonEnd', value: rest.bestSeasonEnd, col: 'bestSeasonEnd' },
+    { key: 'status', value: rest.status, col: 'status' },
+    { key: 'trustScore', value: rest.trustScore, col: 'trustScore' },
+    { key: 'trustLevel', value: rest.trustLevel, col: 'trustLevel' },
+    { key: 'visibilityLevel', value: rest.visibilityLevel, col: 'visibilityLevel' },
+    { key: 'sourceReferences', value: rest.sourceReferences, col: 'sourceReferences' },
+    { key: 'createdById', value: createdById, col: 'createdById' },
+  ];
+
+  for (const field of optionalFields) {
+    // Skip null values to allow database defaults to apply for NOT NULL columns
+    if (field.value === undefined || field.value === null) {
+      continue;
+    }
+    columns.push(`"${field.col}"`);
+    // Cast enum columns explicitly in the VALUES clause
+    let valuePlaceholder: string;
+    if (JSON_COLUMNS.has(field.col)) {
+      valuePlaceholder = `$${paramIndex}::jsonb`;
+    } else if (ENUM_COLUMN_TYPES[field.col]) {
+      valuePlaceholder = `$${paramIndex}::${ENUM_COLUMN_TYPES[field.col]}`;
+    } else {
+      valuePlaceholder = `$${paramIndex}`;
+    }
+    values.push(valuePlaceholder);
+    // Serialize JSON columns to JSON strings before passing as parameters
+    const paramValue = JSON_COLUMNS.has(field.col)
+      ? JSON.stringify(field.value)
+      : field.value;
+    params.push(paramValue);
+    paramIndex++;
+  }
+
+  // Add default values for fields not provided but required by DB
+  // location uses a placeholder, then updated
+  columns.push('location');
+  values.push('ST_SetSRID(ST_MakePoint(0, 0), 4326)::geography');
+
+  const insertQuery = `
+    INSERT INTO "Place" (${columns.join(', ')})
+    VALUES (${values.join(', ')})
+    RETURNING id
+  `;
+
+  const result = await prisma.$queryRawUnsafe<{ id: string }[]>(insertQuery, ...params);
+  const placeId = result[0]?.id;
+  if (!placeId) {
+    throw new Error('Failed to insert place');
+  }
+
+  // Step 2: Set PostGIS geography point
+  await setPlaceLocation(slug, longitude, latitude);
+
+  // Step 3: Fetch the created place with coordinates for return
+  const created = await findPlaceById(placeId);
+  if (!created) {
+    throw new Error(`Failed to retrieve created place with id ${placeId}`);
+  }
+  return created;
+}
+
+/**
+ * Upserts a place by slug: inserts if not exists, updates if exists.
+ * Returns the place with coordinates and a flag indicating whether it was created or updated.
+ */
+export async function upsertPlace(input: CreatePlaceInput): Promise<{ place: PlaceResult; created: boolean }> {
+  const { latitude, longitude, slug: providedSlug, createdById, ...rest } = input;
+
+  // Generate slug from name if not provided
+  const baseSlug = providedSlug ?? slugify(input.name);
+  
+  // Check if place with this slug already exists
+  const existing = await prisma.place.findUnique({ where: { slug: baseSlug } });
+
+  if (existing) {
+    // Update existing place
+    const slug = baseSlug;
+    
+    // Build the update query dynamically based on provided fields
+    const updateFields: Array<{ key: string; value: unknown; col: string }> = [
+      { key: 'name', value: input.name, col: 'name' },
+      { key: 'description', value: rest.description, col: 'description' },
+      { key: 'shortDescription', value: rest.shortDescription, col: 'shortDescription' },
+      { key: 'category', value: rest.category, col: 'category' },
+      { key: 'subcategory', value: rest.subcategory, col: 'subcategory' },
+      { key: 'region', value: rest.region, col: 'region' },
+      { key: 'locality', value: rest.locality, col: 'locality' },
+      { key: 'difficulty', value: rest.difficulty, col: 'difficulty' },
+      { key: 'trailDistanceKm', value: rest.trailDistanceKm, col: 'trailDistanceKm' },
+      { key: 'durationHours', value: rest.durationHours, col: 'durationHours' },
+      { key: 'elevationM', value: rest.elevationM, col: 'elevationM' },
+      { key: 'elevationGainM', value: rest.elevationGainM, col: 'elevationGainM' },
+      { key: 'openingTime', value: rest.openingTime, col: 'openingTime' },
+      { key: 'closingTime', value: rest.closingTime, col: 'closingTime' },
+      { key: 'lastEntryTime', value: rest.lastEntryTime, col: 'lastEntryTime' },
+      { key: 'entryFeeInr', value: rest.entryFeeInr, col: 'entryFeeInr' },
+      { key: 'permitRequired', value: rest.permitRequired, col: 'permitRequired' },
+      { key: 'permitDetails', value: rest.permitDetails, col: 'permitDetails' },
+      { key: 'permitUrl', value: rest.permitUrl, col: 'permitUrl' },
+      { key: 'hasParking', value: rest.hasParking, col: 'hasParking' },
+      { key: 'parkingDetails', value: rest.parkingDetails, col: 'parkingDetails' },
+      { key: 'hasWater', value: rest.hasWater, col: 'hasWater' },
+      { key: 'waterDetails', value: rest.waterDetails, col: 'waterDetails' },
+      { key: 'hasNetwork', value: rest.hasNetwork, col: 'hasNetwork' },
+      { key: 'networkDetails', value: rest.networkDetails, col: 'networkDetails' },
+      { key: 'crowdLevel', value: rest.crowdLevel, col: 'crowdLevel' },
+      { key: 'bestSeasonStart', value: rest.bestSeasonStart, col: 'bestSeasonStart' },
+      { key: 'bestSeasonEnd', value: rest.bestSeasonEnd, col: 'bestSeasonEnd' },
+      { key: 'status', value: rest.status, col: 'status' },
+      { key: 'trustScore', value: rest.trustScore, col: 'trustScore' },
+      { key: 'trustLevel', value: rest.trustLevel, col: 'trustLevel' },
+      { key: 'visibilityLevel', value: rest.visibilityLevel, col: 'visibilityLevel' },
+      { key: 'sourceReferences', value: rest.sourceReferences, col: 'sourceReferences' },
+      { key: 'createdById', value: createdById, col: 'createdById' },
+    ];
+
+    const setClauses: string[] = [];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    for (const field of updateFields) {
+      // Skip null values so database defaults are never overwritten with NULL
+      if (field.value === undefined || field.value === null) {
+        continue;
+      }
+      // Cast enum columns explicitly in the SET clause
+      let valuePlaceholder: string;
+      if (JSON_COLUMNS.has(field.col)) {
+        valuePlaceholder = `$${paramIndex}::jsonb`;
+      } else if (ENUM_COLUMN_TYPES[field.col]) {
+        valuePlaceholder = `$${paramIndex}::${ENUM_COLUMN_TYPES[field.col]}`;
+      } else {
+        valuePlaceholder = `$${paramIndex}`;
+      }
+      setClauses.push(`"${field.col}" = ${valuePlaceholder}`);
+      // Serialize JSON columns to JSON strings before passing as parameters
+      const paramValue = JSON_COLUMNS.has(field.col)
+        ? JSON.stringify(field.value)
+        : field.value;
+      params.push(paramValue);
+      paramIndex++;
+    }
+
+    // Always update location with new coordinates
+    setClauses.push(`location = ST_SetSRID(ST_MakePoint($${paramIndex}, $${paramIndex + 1}), 4326)::geography`);
+    params.push(longitude, latitude);
+    paramIndex += 2;
+
+    // Always update updatedAt
+    setClauses.push(`"updatedAt" = NOW()`);
+
+    if (setClauses.length > 0) {
+      const updateQuery = `
+        UPDATE "Place"
+        SET ${setClauses.join(', ')}
+        WHERE slug = $${paramIndex}
+      `;
+      params.push(baseSlug);
+      
+      await prisma.$queryRawUnsafe(updateQuery, ...params);
+    }
+
+    // Update the PostGIS location
+    await setPlaceLocation(baseSlug, longitude, latitude);
+
+    // Fetch the updated place with coordinates
+    const updated = await findPlaceById(existing.id);
+    if (!updated) {
+      throw new Error(`Failed to retrieve updated place with id ${existing.id}`);
+    }
+    return { place: updated, created: false };
+  } else {
+    // Insert new place (reuse createPlace logic)
+    const place = await createPlace(input);
+    return { place, created: true };
+  }
 }

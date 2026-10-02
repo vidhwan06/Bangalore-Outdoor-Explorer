@@ -138,7 +138,11 @@ describe('PlaceResult contract (shared nearby/bounds response schema)', () => {
     return null;
   }
 
-  const contractKeys = Object.keys(nearbyPlaceSchema.shape);
+  // Only required contract keys must be present in the SELECT. Optional keys (e.g.
+// `primaryPhotoUrl`, which has no backing column yet) may legitimately be absent.
+const contractKeys = Object.entries(nearbyPlaceSchema.shape)
+  .filter(([, schema]) => !schema.isOptional())
+  .map(([key]) => key);
 
   /** Contract keys absent from the SELECT clause — [] means the contract is covered. */
   function missingContractColumns(sql: string): string[] {

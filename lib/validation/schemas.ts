@@ -55,57 +55,57 @@ export const trustLevelSchema = z.enum([
 
 export const placeCreateSchema = z.object({
   name: z.string().min(1).max(200),
-  slug: z.string().min(1).max(250).optional(),
-  description: z.string().max(10000).optional(),
-  shortDescription: z.string().max(500).optional(),
+  slug: placeSlugSchema.nullish(),
+  description: z.string().max(10000).nullish(),
+  shortDescription: z.string().max(500).nullish(),
   category: placeCategorySchema,
-  subcategory: z.string().max(100).optional(),
+  subcategory: z.string().max(100).nullish(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  region: z.string().max(100).optional(),
-  locality: z.string().max(100).optional(),
-  difficulty: z.number().int().min(1).max(5).optional(),
-  trailDistanceKm: z.number().positive().optional(),
-  durationHours: z.number().positive().optional(),
-  elevationM: z.number().int().nonnegative().optional(),
-  elevationGainM: z.number().int().nonnegative().optional(),
+  region: z.string().max(100).nullish(),
+  locality: z.string().max(100).nullish(),
+  difficulty: z.number().int().min(1).max(5).nullish(),
+  trailDistanceKm: z.number().positive().nullish(),
+  durationHours: z.number().positive().nullish(),
+  elevationM: z.number().int().nonnegative().nullish(),
+  elevationGainM: z.number().int().nonnegative().nullish(),
   openingTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    .optional(),
+    .nullish(),
   closingTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    .optional(),
+    .nullish(),
   lastEntryTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    .optional(),
-  entryFeeInr: z.number().int().nonnegative().optional(),
-  permitRequired: z.boolean().default(false),
-  permitDetails: z.string().max(2000).optional(),
-  permitUrl: z.string().url().optional(),
-  hasParking: z.boolean().default(false),
-  parkingDetails: z.string().max(1000).optional(),
-  hasWater: z.boolean().default(false),
-  waterDetails: z.string().max(1000).optional(),
-  hasNetwork: z.boolean().default(false),
-  networkDetails: z.string().max(1000).optional(),
-  crowdLevel: z.number().int().min(1).max(5).optional(),
-  bestSeasonStart: z.number().int().min(1).max(12).optional(),
-  bestSeasonEnd: z.number().int().min(1).max(12).optional(),
+    .nullish(),
+  entryFeeInr: z.number().int().nonnegative().nullish(),
+  permitRequired: z.boolean().nullish(),
+  permitDetails: z.string().max(2000).nullish(),
+  permitUrl: z.string().url().nullish(),
+  hasParking: z.boolean().nullish(),
+  parkingDetails: z.string().max(1000).nullish(),
+  hasWater: z.boolean().nullish(),
+  waterDetails: z.string().max(1000).nullish(),
+  hasNetwork: z.boolean().nullish(),
+  networkDetails: z.string().max(1000).nullish(),
+  crowdLevel: z.number().int().min(1).max(5).nullish(),
+  bestSeasonStart: z.number().int().min(1).max(12).nullish(),
+  bestSeasonEnd: z.number().int().min(1).max(12).nullish(),
   status: placeStatusSchema.default('UNVERIFIED'),
   visibilityLevel: visibilityLevelSchema.default('PUBLIC_EXACT'),
   sourceReferences: z
     .array(
       z.object({
         type: z.string(),
-        url: z.string().url().optional(),
-        title: z.string().optional(),
-        accessedAt: z.string().datetime().optional(),
+        url: z.string().url().nullish(),
+        title: z.string().nullish(),
+        accessedAt: z.string().datetime().nullish(),
       })
     )
-    .optional(),
+    .nullish(),
 });
 
 export const placeUpdateSchema = placeCreateSchema.partial();
