@@ -110,6 +110,139 @@ export const placeCreateSchema = z.object({
 
 export const placeUpdateSchema = placeCreateSchema.partial();
 
+// ============================================
+// PLACE PHOTOS
+// ============================================
+
+/**
+ * Photo licences. Must stay in sync with the PlacePhoto_license_check
+ * constraint created in prisma/migrations/03_place_photo_provenance.
+ */
+export const photoLicenseSchema = z.enum([
+  'CC0',
+  'PUBLIC_DOMAIN',
+  'CC_BY',
+  'CC_BY_SA',
+  'CC_BY_ND',
+  'CC_BY_NC',
+  'CC_BY_NC_SA',
+  'CC_BY_NC_ND',
+  'ALL_RIGHTS_RESERVED',
+  'PERMISSION_ON_FILE',
+]);
+
+export type PhotoLicense = z.infer<typeof photoLicenseSchema>;
+
+/** Licences that permit redistribution outside the project. */
+export const REDISTRIBUTABLE_PHOTO_LICENSES: readonly PhotoLicense[] = [
+  'CC0',
+  'PUBLIC_DOMAIN',
+  'CC_BY',
+  'CC_BY_SA',
+  'CC_BY_ND',
+  'CC_BY_NC',
+  'CC_BY_NC_SA',
+  'CC_BY_NC_ND',
+];
+
+/**
+ * Provenance every place photo must carry. Mirrors the NOT NULL columns on
+ * PlacePhoto so the application rejects a bad row before it reaches Postgres.
+ */
+export const placePhotoProvenanceSchema = z.object({
+  license: photoLicenseSchema,
+  attribution: z.string().trim().min(1, 'Attribution is required'),
+  altText: z.string().trim().min(1, 'Alt text is required'),
+  sourceUrl: z
+    .string()
+    .url()
+    .refine((value) => /^https?:\/\//i.test(value), 'sourceUrl must be an http(s) URL')
+    .nullish(),
+  photographerName: z.string().trim().min(1).nullish(),
+});
+
+/**
+ * An http(s) URL. `z.string().url()` alone also accepts `data:` URIs, which are
+ * not valid storage locations and would bloat the row.
+ */
+const httpUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => /^https?:\/\//i.test(value), 'Must be an http(s) URL');
+
+export const placePhotoCreateSchema = placePhotoProvenanceSchema.extend({
+  placeId: z.string().min(1),
+  url: httpUrlSchema,
+  thumbnailUrl: httpUrlSchema.nullish(),
+  caption: z.string().trim().min(1).nullish(),
+  photographerId: z.string().min(1).nullish(),
+  isPrimary: z.boolean().default(false),
+  sortOrder: z.number().int().min(0).default(0),
+});
+
+export const placePhotoUpdateSchema = placePhotoProvenanceSchema.partial().extend({
+  thumbnailUrl: httpUrlSchema.nullish(),
+  caption: z.string().trim().min(1).nullish(),
+  isPrimary: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+/**
+ * The photo shape returned to clients. Provenance is included so attribution
+ * can be rendered.
+ *
+ * attribution/altText are held to the same non-blank rule as the input schema
+ * and as the database CHECK constraints — the read contract must not be laxer
+ * than the data it reads.
+ */
+export const placePhotoSchema = z.object({
+  id: z.string(),
+  placeId: z.string(),
+  url: httpUrlSchema,
+  thumbnailUrl: httpUrlSchema.nullish(),
+  caption: z.string().nullish(),
+  license: photoLicenseSchema,
+  attribution: z.string().trim().min(1, 'Attribution is required'),
+  altText: z.string().trim().min(1, 'Alt text is required'),
+  sourceUrl: z.string().nullish(),
+  photographerName: z.string().nullish(),
+  isPrimary: z.boolean(),
+  sortOrder: z.number().int(),
+});
+
+export type PlacePhoto = z.infer<typeof placePhotoSchema>;
+
+/**
+ * Source types a place can cite. Kept as a named export so the official-source
+ * write schema and the place-detail read schema cannot drift apart.
+ * Must stay in sync with the verification_source_type enum.
+ */
+export const verificationSourceTypeSchema = z.enum([
+  'OFFICIAL_GOVERNMENT',
+  'OFFICIAL_PARK_AUTHORITY',
+  'OFFICIAL_TOURISM_BOARD',
+  'VERIFIED_CONTRIBUTOR',
+  'COMMUNITY_REPORT',
+  'SATELLITE_IMAGERY',
+  'USER_VISIT',
+  'THIRD_PARTY_API',
+]);
+
+export type VerificationSourceType = z.infer<typeof verificationSourceTypeSchema>;
+
+/**
+ * A source cited by a place detail response (OfficialSource rows attached to the
+ * place). Mirrors PlaceSourceResult in features/places/repositories.
+ */
+export const placeSourceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: verificationSourceTypeSchema,
+  url: z.string().url().nullable(),
+});
+
+export type PlaceSource = z.infer<typeof placeSourceSchema>;
+
 export const placeFilterSchema = z.object({
   category: placeCategorySchema.optional(),
   subcategory: z.string().optional(),
@@ -424,16 +557,7 @@ export const entryRuleCreateSchema = z.object({
 export const officialSourceCreateSchema = z.object({
   placeId: z.string().cuid().optional(),
   name: z.string().min(1).max(200),
-  type: z.enum([
-    'OFFICIAL_GOVERNMENT',
-    'OFFICIAL_PARK_AUTHORITY',
-    'OFFICIAL_TOURISM_BOARD',
-    'VERIFIED_CONTRIBUTOR',
-    'COMMUNITY_REPORT',
-    'SATELLITE_IMAGERY',
-    'USER_VISIT',
-    'THIRD_PARTY_API',
-  ]),
+  type: verificationSourceTypeSchema,
   url: z.string().url().optional(),
   contactEmail: z.string().email().optional(),
   contactPhone: z.string().max(50).optional(),

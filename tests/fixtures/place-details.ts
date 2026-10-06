@@ -13,11 +13,20 @@ export function makePlaceDetail(overrides: Partial<PlaceDetailResult> = {}): Pla
     description: 'A synthetic description used only in tests.',
     latitude: 13.0,
     longitude: 77.5,
+    // A single-place lookup has no reference point, so this is always 0.
     distanceMeters: 0,
     difficulty: 3,
     status: 'OPEN',
     trustLevel: 'VERIFIED',
     visibilityLevel: 'PUBLIC_EXACT',
+    trustScore: 50,
+    hasParking: true,
+    hasWater: false,
+    hasNetwork: true,
+    permitRequired: false,
+    trailDistanceKm: 5,
+    // Resolved from PlacePhoto at query time; null when the place has no photos.
+    primaryPhotoUrl: null,
     sources: [
       {
         id: 'source-1',
@@ -26,6 +35,8 @@ export function makePlaceDetail(overrides: Partial<PlaceDetailResult> = {}): Pla
         url: 'https://example.gov.in/test-peak',
       },
     ],
+    // No photo rows are seeded, so this matches what the database returns today.
+    photos: [],
     ...overrides,
   };
 }

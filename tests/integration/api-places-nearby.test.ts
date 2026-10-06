@@ -2,7 +2,7 @@
 // These tests hit the actual API endpoint with database queries
 
 import { prisma } from '@/lib/db/prisma';
-import { setupTestPlaces, cleanupTestPlaces, TEST_PLACES } from '@/tests/db-setup';
+import { setupTestPlaces, cleanupTestPlaces, purgeTestPlaces, TEST_PLACES } from '@/tests/db-setup';
 
 // Test helper to make API requests
 async function makeNearbyRequest(params: Record<string, string | number>) {
@@ -38,6 +38,9 @@ describe('Integration: GET /api/places/nearby', () => {
   let testSlugs: string[] = [];
 
   beforeAll(async () => {
+    // Start clean: an orphaned fixture from an interrupted run would otherwise
+    // change the counts this suite asserts on.
+    await purgeTestPlaces();
     // Set up test places in the database
     testSlugs = await setupTestPlaces();
   });

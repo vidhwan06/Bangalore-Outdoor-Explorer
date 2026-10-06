@@ -99,19 +99,37 @@ model Place {
 }
 
 model PlacePhoto {
-  id             String   @id @default(dbgenerated("(gen_random_uuid())::text"))
-  placeId        String
-  url            String
+  id       String @id @default(dbgenerated("(gen_random_uuid())::text"))
+  placeId  String
+  url      String
+  // Provenance. PlacePhoto is the single source of truth for imagery, so a
+  // photo cannot exist without a declared licence and an attribution.
+  license        String
+  attribution    String
+  altText        String
+  sourceUrl      String?
+  photographerId String?
   thumbnailUrl   String?
   caption        String?
-  photographerId String?
-  isPrimary      Boolean  @default(false)
-  sortOrder      Int      @default(0)
-  createdAt      DateTime @default(now()) @db.Timestamptz(6)
-  place          Place    @relation(fields: [placeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  // Author name as published by the source. Separate from `photographerId`
+  // (an internal user id) so external/licensed photographers can be credited.
+  photographerName String?
+  isPrimary        Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  place            Place    @relation(fields: [placeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([placeId], map: "idx_place_photo_place")
   @@index([isPrimary], map: "idx_place_photo_primary")
+  // Expected read pattern: one place, primary-first, then explicit ordering.
+  @@index([placeId, isPrimary, sortOrder], map: "idx_place_photo_primary_order")
+  // Single-primary guarantee is a PARTIAL unique index:
+  //   CREATE UNIQUE INDEX idx_place_photo_one_primary
+  //     ON "PlacePhoto"("placeId") WHERE "isPrimary";
+  // Prisma cannot express partial indexes, so it lives only in
+  // prisma/migrations/03_place_photo_provenance/migration.sql.
+  // Apply schema changes with `prisma migrate deploy`; `migrate dev` /
+  // `db push` cannot see this index and will report it as drift.
 }
 
 model PlaceVideo {

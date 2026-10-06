@@ -186,3 +186,74 @@ export function generateUniqueKey(prefix: string, originalName: string): string 
   const extension = originalName.split('.').pop() || '';
   return `${prefix}/${timestamp}-${random}.${extension}`;
 }
+
+// ============================================
+// PLACE PHOTO HELPERS
+// ============================================
+
+/**
+ * Supabase Storage bucket holding place imagery.
+ *
+ * Created by prisma/migrations/03_place_photo_provenance, which also installs
+ * the read policy. The bucket is public; there is no public write policy.
+ */
+export const PLACE_PHOTOS_BUCKET = 'place-photos';
+
+/** MIME types accepted for place photos. Mirrors the bucket's allowed_mime_types. */
+export const PLACE_PHOTO_MIME_TYPES: readonly string[] = FILE_CATEGORIES.IMAGE;
+
+/**
+ * Builds the storage key for a place photo, following the existing
+ * STORAGE_PATHS.PLACE_PHOTOS convention: `places/{placeId}/photos/{filename}`.
+ *
+ * @throws if the filename contains a path separator or traversal segment, which
+ *         would let a caller write outside the place's own folder.
+ */
+export function buildPlacePhotoKey(placeId: string, filename: string): string {
+  const base = generateStoragePath(STORAGE_PATHS.PLACE_PHOTOS, { placeId });
+  const safeName = sanitizeStorageFilename(filename);
+  return `${base}/${safeName}`;
+}
+
+/**
+ * Reduces a user-supplied filename to a safe basename.
+ * Rejects path separators and traversal; falls back to a generic name.
+ */
+export function sanitizeStorageFilename(filename: string): string {
+  const basename = filename.split(/[\\/]/).pop() ?? '';
+  const cleaned = basename.replace(/[^A-Za-z0-9._-]/g, '-').replace(/^[.-]+/, '');
+  const safe = cleaned === '' || cleaned === '.' || cleaned === '..' ? 'photo' : cleaned;
+  return safe.slice(0, 120);
+}
+
+/** Validates a place photo upload against the photo-specific MIME/size rules. */
+export function validatePlacePhotoFile(mimeType: string, size: number): ValidationResult {
+  const category = getFileCategory(mimeType);
+  if (category !== 'IMAGE') {
+    return { valid: false, error: `Not an image type: ${mimeType}` };
+  }
+  return validateFile(mimeType, size);
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * Resolves the configured storage provider.
+ *
+ * Imported lazily so that `lib/storage/index.ts` stays free of provider
+ * dependencies (and therefore safe to import from anywhere). Currently only
+ * 'supabase' is implemented; other declared provider types are not wired yet.
+ */
+export async function getStorageProvider(): Promise<StorageProvider> {
+  const provider = (process.env.STORAGE_PROVIDER ?? 'supabase').toLowerCase();
+  if (provider !== 'supabase') {
+    throw new Error(
+      `Storage provider "${provider}" is not implemented. Only "supabase" is available.`
+    );
+  }
+  const { createPlacePhotoStorageProvider } = await import('./supabase');
+  return createPlacePhotoStorageProvider();
+}

@@ -504,26 +504,83 @@ async function main() {
 
   for (const placeData of demoPlaces) {
     // Convert GeoJSON Point to PostGIS geography
-    const { location, ...rest } = placeData;
+    const { location } = placeData;
 
-    const place = await prisma.place.upsert({
-      where: { slug: placeData.slug },
-      update: {},
-      create: {
-        ...rest,
-        // Use raw query to set geography point
-      },
-    });
-
-    // Set the geography point via raw SQL
-    await prisma.$executeRawUnsafe(
-      `UPDATE "Place" SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography WHERE slug = $3`,
+    // `Place.location` is declared `Unsupported("geography")` in the Prisma
+    // schema. Prisma Client can neither read nor write that column, and the
+    // query engine cannot compile an INSERT plan for `Place` at all:
+    // upsertOne/createOne/createMany all fail with "Operation 'createOne' for
+    // model 'Place' does not match any query.". The column is also NOT NULL in
+    // the database, so the location has to be written by the INSERT itself
+    // rather than by a follow-up UPDATE. Raw SQL is the only supported way to
+    // populate an `Unsupported` column.
+    //
+    // ON CONFLICT (slug) preserves the original upsert behaviour: insert when
+    // the slug is missing, otherwise leave the stored row alone apart from
+    // refreshing the location, exactly as the old follow-up UPDATE did.
+    // `slug` is covered by the unique index "Place_slug_key".
+    const inserted = await prisma.$queryRawUnsafe<{ name: string }[]>(
+      `INSERT INTO "Place" (
+         name, slug, description, "shortDescription", category, subcategory, location,
+         region, locality, difficulty, "trailDistanceKm", "durationHours",
+         "elevationM", "elevationGainM", "openingTime", "closingTime",
+         "lastEntryTime", "entryFeeInr", "permitRequired", "permitDetails",
+         "permitUrl", "hasParking", "parkingDetails", "hasWater", "waterDetails",
+         "hasNetwork", "networkDetails", "crowdLevel", "bestSeasonStart",
+         "bestSeasonEnd", status, "trustScore", "trustLevel", "visibilityLevel",
+         "lastVerifiedAt", "verificationNotes", "createdById", "sourceReferences"
+       ) VALUES (
+         $1, $2, $3, $4, $5::place_category, $6,
+         ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography,
+         $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
+         $23, $24, $25, $26, $27, $28, $29, $30, $31, $32::place_status, $33,
+         $34::trust_level, $35::visibility_level, $36, $37, $38, $39::jsonb
+       )
+       ON CONFLICT (slug) DO UPDATE SET location = EXCLUDED.location
+       RETURNING name`,
+      placeData.name,
+      placeData.slug,
+      placeData.description ?? null,
+      placeData.shortDescription ?? null,
+      placeData.category,
+      placeData.subcategory ?? null,
+      // GeoJSON is [longitude, latitude]; PostGIS ST_MakePoint takes the same order.
       location.coordinates[0],
       location.coordinates[1],
-      placeData.slug
+      placeData.region ?? null,
+      placeData.locality ?? null,
+      placeData.difficulty ?? null,
+      placeData.trailDistanceKm ?? null,
+      placeData.durationHours ?? null,
+      placeData.elevationM ?? null,
+      placeData.elevationGainM ?? null,
+      placeData.openingTime ?? null,
+      placeData.closingTime ?? null,
+      placeData.lastEntryTime ?? null,
+      placeData.entryFeeInr ?? null,
+      placeData.permitRequired ?? false,
+      placeData.permitDetails ?? null,
+      placeData.permitUrl ?? null,
+      placeData.hasParking ?? false,
+      placeData.parkingDetails ?? null,
+      placeData.hasWater ?? false,
+      placeData.waterDetails ?? null,
+      placeData.hasNetwork ?? false,
+      placeData.networkDetails ?? null,
+      placeData.crowdLevel ?? null,
+      placeData.bestSeasonStart ?? null,
+      placeData.bestSeasonEnd ?? null,
+      placeData.status,
+      placeData.trustScore ?? 0,
+      placeData.trustLevel,
+      placeData.visibilityLevel,
+      placeData.lastVerifiedAt ?? null,
+      placeData.verificationNotes ?? null,
+      placeData.createdById ?? null,
+      JSON.stringify(placeData.sourceReferences ?? null)
     );
 
-    console.log(`✅ Created demo place: ${place.name}`);
+    console.log(`✅ Created demo place: ${inserted[0].name}`);
   }
 
   // Create official sources (DEMO)

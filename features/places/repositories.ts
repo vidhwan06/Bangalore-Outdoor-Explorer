@@ -10,6 +10,12 @@ import {
   getLongitudeSQL,
   setPlaceLocation,
 } from '@/lib/db/postgis';
+import {
+  PRIMARY_PHOTO_SELECT_ITEM,
+  findPhotosForPlace,
+  primaryPhotoLateralSQL,
+  type PlacePhotoResult,
+} from '@/features/places/photos';
 import type { place_category, place_status, trust_level, visibility_level } from '@prisma/client';
 import { slugify } from '@/lib/utils';
 
@@ -55,6 +61,11 @@ export interface PlaceResult {
   hasNetwork: boolean;
   permitRequired: boolean;
   trailDistanceKm: number | null;
+  /**
+   * URL of the place's primary photo, derived from PlacePhoto at query time.
+   * NULL when the place has no photos. Never stored on the Place row.
+   */
+  primaryPhotoUrl: string | null;
 }
 
 export interface PaginatedResult<T> {
@@ -83,6 +94,11 @@ export interface PlaceSourceResult {
 export interface PlaceDetailResult extends PlaceResult {
   description: string | null;
   sources: PlaceSourceResult[];
+  /**
+   * All photos for the place in primary-first order, including provenance and
+   * alt text. Empty when the place has no photos.
+   */
+  photos: PlacePhotoResult[];
 }
 
 /**
@@ -141,7 +157,9 @@ export async function findNearbyPlaces(
   const withinRadiusSQL = getWithinRadiusSQL(longitude, latitude, radiusMeters);
 
   // Build the full query with parameterized values
-  // We need to inject the spatial SQL fragments but keep user values parameterized
+  // We need to inject the spatial SQL fragments but keep user values parameterized.
+  // The primary photo is resolved by a LATERAL join in the same statement, so
+  // the whole page costs one query instead of one query per place.
   const query = `
     SELECT
       id,
@@ -161,17 +179,19 @@ export async function findNearbyPlaces(
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm"
-    FROM "Place"
+      "trailDistanceKm",
+      ${PRIMARY_PHOTO_SELECT_ITEM}
+    FROM "Place" p
+    ${primaryPhotoLateralSQL('p')}
     ${where}
       AND ${withinRadiusSQL}
-    ORDER BY "distanceMeters" ASC
+    ORDER BY "distanceMeters" ASC, p.id ASC
     LIMIT $${filterParams.length + 1} OFFSET $${filterParams.length + 2}
   `;
 
   const countQuery = `
     SELECT COUNT(*) as total
-    FROM "Place"
+    FROM "Place" p
     ${where}
       AND ${withinRadiusSQL}
   `;
@@ -231,17 +251,19 @@ export async function findPlacesInBounds(
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm"
-    FROM "Place"
+      "trailDistanceKm",
+      ${PRIMARY_PHOTO_SELECT_ITEM}
+    FROM "Place" p
+    ${primaryPhotoLateralSQL('p')}
     ${where}
       AND ${withinBoundsSQL}
-    ORDER BY name ASC
+    ORDER BY name ASC, p.id ASC
     LIMIT $${filterParams.length + 1} OFFSET $${filterParams.length + 2}
   `;
 
   const countQuery = `
     SELECT COUNT(*) as total
-    FROM "Place"
+    FROM "Place" p
     ${where}
       AND ${withinBoundsSQL}
   `;
@@ -290,10 +312,12 @@ export async function findPlaceById(id: string): Promise<PlaceResult | null> {
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm"
-    FROM "Place"
-    WHERE id = $1
-      AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
+      "trailDistanceKm",
+      ${PRIMARY_PHOTO_SELECT_ITEM}
+    FROM "Place" p
+    ${primaryPhotoLateralSQL('p')}
+    WHERE p.id = $1
+      AND p."visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
   `;
 
   const rows = await prisma.$queryRawUnsafe<PlaceResult[]>(query, id);
@@ -325,10 +349,12 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceDetailResult |
       "hasWater",
       "hasNetwork",
       "permitRequired",
-      "trailDistanceKm"
-    FROM "Place"
-    WHERE slug = $1
-      AND "visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
+      "trailDistanceKm",
+      ${PRIMARY_PHOTO_SELECT_ITEM}
+    FROM "Place" p
+    ${primaryPhotoLateralSQL('p')}
+    WHERE p.slug = $1
+      AND p."visibilityLevel" IN ('PUBLIC_EXACT', 'PUBLIC_APPROXIMATE')
   `;
 
   type PlaceDetailRow = PlaceResult & { description: string | null };
@@ -337,14 +363,19 @@ export async function findPlaceBySlug(slug: string): Promise<PlaceDetailResult |
   const place = rows[0] ?? null;
   if (!place) return null;
 
-  // Typed Prisma query (non-spatial) — no raw SQL needed for sources
-  const sources = await prisma.officialSource.findMany({
-    where: { placeId: place.id },
-    select: { id: true, name: true, type: true, url: true },
-    orderBy: { name: 'asc' },
-  });
+  // Typed Prisma query (non-spatial) — no raw SQL needed for relations.
+  // Sources and photos are both 1-to-many reads of a single place, so running
+  // them together costs two statements regardless of how many rows each has.
+  const [sources, photos] = await Promise.all([
+    prisma.officialSource.findMany({
+      where: { placeId: place.id },
+      select: { id: true, name: true, type: true, url: true },
+      orderBy: { name: 'asc' },
+    }),
+    findPhotosForPlace(place.id),
+  ]);
 
-  return { ...place, sources };
+  return { ...place, sources, photos };
 }
 
 /**

@@ -38,7 +38,10 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
-prisma/migrations/
+# NOTE: prisma/migrations/ is intentionally TRACKED. The schema must be
+# reproducible from the repository; migration SQL is the authoritative DDL.
+# Generated client output and local caches stay ignored:
+prisma/generated/
 
 # IDE
 .idea/
