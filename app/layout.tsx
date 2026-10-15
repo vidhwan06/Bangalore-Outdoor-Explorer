@@ -1,11 +1,19 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Newsreader, Manrope, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const newsreader = Newsreader({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-newsreader',
+  weight: ['400', '500'],
+});
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-manrope',
+  weight: ['400', '500', '600', '700'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -15,6 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: {
     default: 'Bengaluru Outdoor Explorer',
     template: '%s | Bengaluru Outdoor Explorer',
@@ -64,8 +73,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#171717' },
+    { media: '(prefers-color-scheme: light)', color: '#F4F1E9' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F1513' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -74,14 +83,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+    <html lang="en" className={`${newsreader.variable} ${manrope.variable} ${jetbrainsMono.variable} antialiased`}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="min-h-screen bg-surface-50 text-surface-900 transition-colors duration-200 dark:bg-surface-950 dark:text-surface-50">
+      <body className="min-h-screen bg-background text-on-background transition-colors duration-200">
         {children}
       </body>
     </html>

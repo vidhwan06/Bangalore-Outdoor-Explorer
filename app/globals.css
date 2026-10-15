@@ -4,60 +4,226 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 20 14% 4%;
-    --card: 0 0% 100%;
-    --card-foreground: 20 14% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 4%;
-    --primary: 142 76% 36%;
-    --primary-foreground: 355 7% 97%;
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 142 76% 36%;
+    /* Font families */
+    --font-newsreader: 'Newsreader', Georgia, serif;
+    --font-manrope: 'Manrope', system-ui, sans-serif;
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-jetbrains-mono: 'JetBrains Mono', monospace;
+
+    /* Bengaluru Outdoor Explorer - Stitch Design System Colors */
+    /* Dark Canvas Foundation */
+    --surface-canvas: #0B1110;
+    --surface-subtle: #111918;
+    --surface-elevated: #17211F;
+    --surface-panel: #1B2925;
+
+    /* Paper Canvas Foundation (Editorial Inset / Journal Sections) */
+    --surface-paper: #F4F1E9;
+    --surface-paper-light: #F8F7F2;
+    --surface-paper-deep: #EAE7DD;
+
+    /* Primary Accent - Electric Lichen / Kinetic Lime */
+    --primary: #EFFFB6;
+    --primary-foreground: #293500;
+    --primary-container: #C7E85B;
+    --primary-container-foreground: #536700;
+    --primary-fixed: #CFF062;
+    --primary-fixed-dim: #B3D348;
+    --primary-fixed-foreground: #171E00;
+    --primary-fixed-dim-foreground: #3D4D00;
+
+    /* Secondary Natural Foliage - Shola Forest & Moss */
+    --secondary: #A5D0B4;
+    --secondary-foreground: #0F3724;
+    --secondary-container: #2A513B;
+    --secondary-container-foreground: #98C2A7;
+    --secondary-fixed: #C1EDD0;
+    --secondary-fixed-dim: #A5D0B4;
+    --secondary-fixed-foreground: #002112;
+    --secondary-fixed-dim-foreground: #274E39;
+
+    /* Tertiary */
+    --tertiary: #ECFFC4;
+    --tertiary-foreground: #243600;
+    --tertiary-container: #BBEB5D;
+    --tertiary-container-foreground: #4A6900;
+    --tertiary-fixed: #C2F363;
+    --tertiary-fixed-dim: #A7D64A;
+    --tertiary-fixed-foreground: #131F00;
+    --tertiary-fixed-dim-foreground: #364E00;
+
+    /* Surface System */
+    --surface: #0F1513;
+    --surface-dim: #0F1513;
+    --surface-bright: #343A39;
+    --surface-container-lowest: #090F0E;
+    --surface-container-low: #171D1C;
+    --surface-container: #1B2120;
+    --surface-container-high: #252B2A;
+    --surface-container-highest: #303635;
+    --on-surface: #DEE4E1;
+    --on-surface-variant: #C5C9B1;
+    --outline: #8F937E;
+    --outline-variant: #454937;
+    --surface-tint: #B3D348;
+    --inverse-surface: #DEE4E1;
+    --inverse-on-surface: #2B3230;
+    --inverse-primary: #526600;
+
+    /* Error */
+    --error: #FFB4AB;
+    --error-foreground: #690005;
+    --error-container: #93000A;
+    --error-container-foreground: #FFDAD6;
+
+    /* Background */
+    --background: #0F1513;
+    --on-background: #DEE4E1;
+    --surface-variant: #303635;
+
+    /* Legacy shadcn/ui compat (mapped to new system) */
+    --foreground: #DEE4E1;
+    --card: #1B2120;
+    --card-foreground: #DEE4E1;
+    --popover: #1B2120;
+    --popover-foreground: #DEE4E1;
+    --muted: #171D1C;
+    --muted-foreground: #8F937E;
+    --accent: #171D1C;
+    --accent-foreground: #DEE4E1;
+    --destructive: #FFB4AB;
+    --destructive-foreground: #690005;
+    --border: #454937;
+    --input: #454937;
+    --ring: #C7E85B;
     --radius: 0.5rem;
   }
 
-  .dark {
-    --background: 20 14% 4%;
-    --foreground: 60 9.1% 97.8%;
-    --card: 20 14% 4%;
-    --card-foreground: 60 9.1% 97.8%;
-    --popover: 20 14% 4%;
-    --popover-foreground: 60 9.1% 97.8%;
-    --primary: 142 76% 36%;
-    --primary-foreground: 355 7% 97%;
-    --secondary: 12 6.5% 15.1%;
-    --secondary-foreground: 60 9.1% 97.8%;
-    --muted: 12 6.5% 15.1%;
-    --muted-foreground: 24 5.4% 63.9%;
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 60 9.1% 97.8%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 12 6.5% 15.1%;
-    --input: 12 6.5% 15.1%;
-    --ring: 142 76% 36%;
+  .light {
+    /* Light mode - Paper Canvas Foundation */
+    --surface-canvas: #F4F1E9;
+    --surface-subtle: #F8F7F2;
+    --surface-elevated: #EAE7DD;
+    --surface-panel: #DCD9D0;
+
+    --surface-paper: #0B1110;
+    --surface-paper-light: #111918;
+    --surface-paper-deep: #17211F;
+
+    --background: #F4F1E9;
+    --on-background: #111918;
+    --surface: #F4F1E9;
+    --surface-dim: #F4F1E9;
+    --surface-bright: #EAE7DD;
+    --surface-container-lowest: #F8F7F2;
+    --surface-container-low: #EAE7DD;
+    --surface-container: #DCD9D0;
+    --surface-container-high: #CCC8BE;
+    --surface-container-highest: #BCB8AD;
+    --on-surface: #111918;
+    --on-surface-variant: #4B5A53;
+    --outline: #828E87;
+    --outline-variant: #A4B3AC;
+    --surface-tint: #527A62;
+    --inverse-surface: #111918;
+    --inverse-on-surface: #F4F1E9;
+    --inverse-primary: #C7E85B;
+
+    /* Primary in light mode */
+    --primary: #527A62;
+    --primary-foreground: #F4F1E9;
+    --primary-container: #C1EDD0;
+    --primary-container-foreground: #002112;
+    --primary-fixed: #C7E85B;
+    --primary-fixed-dim: #A9D84C;
+    --primary-fixed-foreground: #171E00;
+    --primary-fixed-dim-foreground: #3D4D00;
+
+    /* Secondary in light mode */
+    --secondary: #2E5B48;
+    --secondary-foreground: #F4F1E9;
+    --secondary-container: #C1EDD0;
+    --secondary-container-foreground: #002112;
+    --secondary-fixed: #A5D0B4;
+    --secondary-fixed-dim: #8BCAA3;
+    --secondary-fixed-foreground: #002112;
+    --secondary-fixed-dim-foreground: #274E39;
+
+    /* Tertiary in light mode */
+    --tertiary: #364E00;
+    --tertiary-foreground: #F4F1E9;
+    --tertiary-container: #C2F363;
+    --tertiary-container-foreground: #131F00;
+    --tertiary-fixed: #BBEB5D;
+    --tertiary-fixed-dim: #A7D64A;
+    --tertiary-fixed-foreground: #131F00;
+    --tertiary-fixed-dim-foreground: #364E00;
+
+    /* Error in light mode */
+    --error: #B3261E;
+    --error-foreground: #FFDAD6;
+    --error-container: #FFDAD6;
+    --error-container-foreground: #B3261E;
+
+    /* Legacy shadcn/ui compat for light mode */
+    --foreground: #111918;
+    --card: #F4F1E9;
+    --card-foreground: #111918;
+    --popover: #F4F1E9;
+    --popover-foreground: #111918;
+    --muted: #EAE7DD;
+    --muted-foreground: #828E87;
+    --accent: #EAE7DD;
+    --accent-foreground: #111918;
+    --destructive: #B3261E;
+    --destructive-foreground: #FFDAD6;
+    --border: #DCD9D0;
+    --input: #DCD9D0;
+    --ring: #527A62;
   }
 }
 
 @layer base {
   * {
-    @apply border-gray-200 dark:border-gray-800;
+    @apply border-outline-variant/50;
   }
+
+  html {
+    @apply scroll-smooth;
+  }
+
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50;
-    font-feature-settings:
-      'rlig' 1,
-      'calt' 1;
+    @apply bg-background text-on-background antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Font class utilities */
+  .font-display {
+    font-family: var(--font-newsreader);
+  }
+  .font-headline {
+    font-family: var(--font-newsreader);
+  }
+  .font-title {
+    font-family: var(--font-newsreader);
+  }
+  .font-body {
+    font-family: var(--font-manrope);
+  }
+  .font-label {
+    font-family: var(--font-manrope);
+  }
+  .font-mono {
+    font-family: var(--font-jetbrains-mono);
+  }
+
+  /* Selection colors */
+  ::selection {
+    @apply bg-primary-container/40 text-primary-foreground;
+  }
+
+  ::-moz-selection {
+    @apply bg-primary-container/40 text-primary-foreground;
   }
 }
 
@@ -89,230 +255,354 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-}
 
-/* Map container styles */
-.map-container {
-  @apply relative h-full w-full;
-}
-
-.map-container .mapboxgl-map {
-  @apply rounded-lg;
-}
-
-.map-container .mapboxgl-ctrl-bottom-right {
-  @apply hidden;
-}
-
-/* Leaflet map overrides */
-.leaflet-container {
-  @apply font-sans;
-}
-
-.leaflet-popup-content-wrapper {
-  @apply rounded-lg shadow-lg;
-}
-
-.leaflet-popup-content {
-  @apply m-0 p-2;
-}
-
-/* Focus styles */
-.focus-visible-ring {
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950;
-}
-
-/* Loading skeleton */
-.skeleton {
-  @apply animate-pulse rounded bg-gray-200 dark:bg-gray-700;
-}
-
-/* Button variants */
-.btn {
-  @apply focus-visible-ring inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50;
-}
-
-.btn-primary {
-  @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
-}
-
-.btn-secondary {
-  @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 dark:active:bg-gray-600;
-}
-
-.btn-outline {
-  @apply btn border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800 dark:active:bg-gray-700;
-}
-
-.btn-ghost {
-  @apply btn bg-transparent hover:bg-gray-100 active:bg-gray-200 dark:hover:bg-gray-800 dark:active:bg-gray-700;
-}
-
-.btn-destructive {
-  @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
-}
-
-/* Card variants */
-.card {
-  @apply rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100;
-}
-
-.card-interactive {
-  @apply card cursor-pointer;
-}
-
-/* Input variants */
-.input {
-  @apply focus-visible-ring flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100;
-}
-
-.input-error {
-  @apply input border-red-500 focus-visible:ring-red-500;
-}
-
-/* Badge variants */
-.badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors;
-}
-
-.badge-primary {
-  @apply badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400;
-}
-
-.badge-secondary {
-  @apply badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300;
-}
-
-.badge-success {
-  @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
-}
-
-.badge-warning {
-  @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
-}
-
-.badge-destructive {
-  @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
-}
-
-.badge-outline {
-  @apply badge border border-gray-300 dark:border-gray-700;
-}
-
-/* Difficulty badges */
-.difficulty-1 {
-  @apply badge-success;
-}
-.difficulty-2 {
-  @apply badge-success;
-}
-.difficulty-3 {
-  @apply badge-warning;
-}
-.difficulty-4 {
-  @apply badge-destructive;
-}
-.difficulty-5 {
-  @apply badge-destructive;
-}
-
-/* Status badges */
-.status-open {
-  @apply badge-success;
-}
-.status-permit_required {
-  @apply badge-warning;
-}
-.status-limited_slots {
-  @apply badge-warning;
-}
-.status-closed {
-  @apply badge-destructive;
-}
-.status-weather_concern {
-  @apply badge-destructive;
-}
-.status-unverified {
-  @apply badge-outline;
-}
-
-/* Trust level badges */
-.trust-verified {
-  @apply badge-success;
-}
-.trust-community_submitted {
-  @apply badge-outline;
-}
-.trust-information_outdated {
-  @apply badge-warning;
-}
-.trust-closed_restricted {
-  @apply badge-destructive;
-}
-.trust-under_review {
-  @apply badge-warning;
-}
-
-/* Category colors for map markers */
-.category-trek {
-  --marker-color: #16a34a;
-}
-.category-hike {
-  --marker-color: #22c55e;
-}
-.category-waterfall {
-  --marker-color: #06b6d4;
-}
-.category-lake {
-  --marker-color: #3b82f6;
-}
-.category-mountain {
-  --marker-color: #78716c;
-}
-.category-forest {
-  --marker-color: #15803d;
-}
-.category-cave {
-  --marker-color: #78716c;
-}
-.category-fort {
-  --marker-color: #b45309;
-}
-.category-viewpoint {
-  --marker-color: #eab308;
-}
-.category-camping {
-  --marker-color: #f97316;
-}
-.category-cycling {
-  --marker-color: #8b5cf6;
-}
-.category-scenic_drive {
-  --marker-color: #ec4899;
-}
-.category-hidden_gem {
-  --marker-color: #a855f7;
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
+  /* Frosted glass utility */
+  .glass {
+    @apply bg-surface-container/70 backdrop-blur-xl border border-outline-variant/30;
   }
 
+  .glass-strong {
+    @apply bg-surface-container/85 backdrop-blur-2xl border border-outline-variant/30;
+  }
+
+  .glass-light {
+    @apply bg-surface-paper/80 backdrop-blur-xl border border-surface-paper-deep/50;
+  }
+
+  /* Gradient text utilities */
+  .gradient-text-primary {
+    @apply bg-gradient-to-r from-primary to-primary-400 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-secondary {
+    @apply bg-gradient-to-r from-secondary to-secondary-400 bg-clip-text text-transparent;
+  }
+
+  /* Vignette gradients */
+  .vignette-hero {
+    background: linear-gradient(to right, rgba(11, 17, 16, 0.82) 0%, rgba(11, 17, 16, 0.4) 50%, rgba(11, 17, 16, 0.15) 100%),
+      linear-gradient(to bottom, transparent 65%, #0F1513 100%);
+  }
+
+  .vignette-card {
+    @apply bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/40 to-transparent;
+  }
+
+  /* Topographic contour watermark */
+  .topo-watermark {
+    @apply absolute inset-0 pointer-events-none opacity-5 -z-10;
+  }
+
+  /* Focus visible ring */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    @apply animate-pulse rounded bg-surface-container-highest/50;
+  }
+
+  /* Button variants matching Stitch design */
+  .btn {
+    @apply focus-visible-ring inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-label-technical font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-container text-primary-foreground hover:bg-primary-fixed hover:shadow-glow-primary active:bg-primary-fixed-dim active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-container text-on-surface border border-outline-variant/30 hover:bg-surface-container-high hover:border-primary/50 hover:text-primary;
+  }
+
+  .btn-outline {
+    @apply btn border border-outline-variant/30 bg-transparent hover:bg-surface-container hover:border-primary/50 hover:text-primary;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-surface-container;
+  }
+
+  .btn-destructive {
+    @apply btn bg-error text-error-foreground hover:bg-error-600;
+  }
+
+  .btn-paper {
+    @apply btn bg-surface-subtle text-surface-paper hover:bg-surface-elevated;
+  }
+
+  /* Card variants */
+  .card {
+    @apply rounded-xl border border-outline-variant/20 bg-surface-container text-on-surface shadow-card transition-all duration-300;
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer hover:shadow-card-hover hover:-translate-y-1 hover:border-primary/40;
+  }
+
+  .card-paper {
+    @apply rounded-xl border border-surface-paper-deep/50 bg-surface-paper text-surface-subtle shadow-card transition-all duration-300;
+  }
+
+  .card-paper-interactive {
+    @apply card-paper cursor-pointer hover:shadow-card-hover hover:-translate-y-1 hover:border-secondary/40;
+  }
+
+  /* Input variants */
+  .input {
+    @apply focus-visible-ring flex h-12 w-full rounded-lg bg-surface-container-low border border-outline-variant/30 px-4 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant/50 disabled:cursor-not-allowed disabled:opacity-50 transition-colors;
+  }
+
+  .input:focus {
+    @apply border-primary ring-2 ring-primary/20;
+  }
+
+  /* Badge variants */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-label-sm font-medium transition-colors;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-container text-primary-container-foreground;
+  }
+
+  .badge-secondary {
+    @apply badge bg-secondary-container text-secondary-container-foreground;
+  }
+
+  .badge-tertiary {
+    @apply badge bg-tertiary-container text-tertiary-container-foreground;
+  }
+
+  .badge-outline {
+    @apply badge border border-outline-variant/30 bg-transparent text-on-surface-variant;
+  }
+
+  .badge-success {
+    @apply badge bg-secondary-container text-secondary-container-foreground;
+  }
+
+  .badge-warning {
+    @apply badge bg-tertiary-container text-tertiary-container-foreground;
+  }
+
+  .badge-destructive {
+    @apply badge bg-error-container text-error-container-foreground;
+  }
+
+  /* Difficulty badges */
+  .difficulty-easy {
+    @apply badge-secondary;
+  }
+
+  .difficulty-moderate {
+    @apply badge-primary;
+  }
+
+  .difficulty-challenging {
+    @apply badge-tertiary;
+  }
+
+  .difficulty-strenuous {
+    @apply badge-destructive;
+  }
+
+  /* Status badges */
+  .status-open {
+    @apply badge-success;
+  }
+
+  .status-permit_required {
+    @apply badge-warning;
+  }
+
+  .status-limited_slots {
+    @apply badge-warning;
+  }
+
+  .status-closed {
+    @apply badge-destructive;
+  }
+
+  .status-weather_concern {
+    @apply badge-destructive;
+  }
+
+  .status-unverified {
+    @apply badge-outline;
+  }
+
+  /* Trust level badges */
+  .trust-verified {
+    @apply badge-success;
+  }
+
+  .trust-community_submitted {
+    @apply badge-outline;
+  }
+
+  .trust-information_outdated {
+    @apply badge-warning;
+  }
+
+  .trust-closed_restricted {
+    @apply badge-destructive;
+  }
+
+  .trust-under_review {
+    @apply badge-warning;
+  }
+
+  /* Category colors for map markers */
+  .category-trek {
+    --marker-color: #16a34a;
+  }
+  .category-hike {
+    --marker-color: #22c55e;
+  }
+  .category-waterfall {
+    --marker-color: #06b6d4;
+  }
+  .category-lake {
+    --marker-color: #3b82f6;
+  }
+  .category-mountain {
+    --marker-color: #78716c;
+  }
+  .category-forest {
+    --marker-color: #15803d;
+  }
+  .category-cave {
+    --marker-color: #78716c;
+  }
+  .category-fort {
+    --marker-color: #b45309;
+  }
+  .category-viewpoint {
+    --marker-color: #eab308;
+  }
+  .category-camping {
+    --marker-color: #f97316;
+  }
+  .category-cycling {
+    --marker-color: #8b5cf6;
+  }
+  .category-scenic_drive {
+    --marker-color: #ec4899;
+  }
+  .category-hidden_gem {
+    --marker-color: #a855f7;
+  }
+
+  /* Container width utility */
+  .container-editorial {
+    @apply w-full max-w-[1600px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop;
+  }
+
+  /* Grid layouts */
+  .grid-editorial-mobile {
+    @apply grid grid-cols-4 gap-gutter;
+  }
+
+  .grid-editorial-tablet {
+    @apply grid grid-cols-8 gap-gutter-tablet;
+  }
+
+  .grid-editorial-desktop {
+    @apply grid grid-cols-12 gap-gutter-desktop;
+  }
+
+  /* Section spacing */
+  .section-py {
+    @apply py-space-2xl;
+  }
+
+  .section-px {
+    @apply px-margin md:px-margin-tablet lg:px-margin-desktop;
+  }
+
+  /* Aspect ratios for cards */
+  .aspect-route-hero {
+    aspect-ratio: 16 / 10;
+  }
+
+  .aspect-category-tall {
+    aspect-ratio: 9 / 16;
+  }
+
+  .aspect-place-card {
+    aspect-ratio: 4 / 3;
+  }
+
+  /* Text clamp utilities */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Map container styles */
   .map-container {
-    page-break-inside: avoid;
+    @apply relative h-full w-full;
   }
-}
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  .map-container .mapboxgl-map {
+    @apply rounded-xl;
+  }
+
+  .map-container .mapboxgl-ctrl-bottom-right {
+    @apply hidden;
+  }
+
+  /* Leaflet map overrides */
+  .leaflet-container {
+    @apply font-body;
+  }
+
+  .leaflet-popup-content-wrapper {
+    @apply rounded-xl shadow-card;
+  }
+
+  .leaflet-popup-content {
+    @apply m-0 p-2;
+  }
+
+  /* Print styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    .map-container {
+      page-break-inside: avoid;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
