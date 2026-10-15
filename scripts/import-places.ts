@@ -107,7 +107,7 @@ async function importPlaces(filePath: string, userId?: string): Promise<ImportSu
       // Compare if data is identical to decide SKIPPED vs UPDATED
       // For simplicity, we'll do a full upsert and check if anything changed
       try {
-        const result = await placeService.upsertPlace(data, undefined);
+        const result = await placeService.upsertPlace(data, userId);
         if (result.created) {
           console.log(`  ✅ Created: ${result.place.name} (slug: ${result.place.slug})`);
           results.push({ name: result.place.name, slug: result.place.slug, action: 'CREATED', success: true });
@@ -126,7 +126,7 @@ async function importPlaces(filePath: string, userId?: string): Promise<ImportSu
     } else {
       // New place - create it
       try {
-        const result = await placeService.upsertPlace(data, undefined);
+        const result = await placeService.upsertPlace(data, userId);
         console.log(`  ✅ Created: ${result.place.name} (slug: ${result.place.slug})`);
         results.push({ name: result.place.name, slug: result.place.slug, action: 'CREATED', success: true });
         created++;
