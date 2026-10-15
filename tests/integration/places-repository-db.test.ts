@@ -6,9 +6,9 @@
 // axis, or a value that the shared response contract rejects. These tests run
 // the real SQL against the real PostGIS schema.
 //
-// Seeded demo data (slugs ending in "-demo") is used as the subject wherever
-// possible, so the assertions cover exactly what `pnpm db:seed` writes. Nothing
-// here mutates seeded rows; rows created by the tests are namespaced under the
+// Real imported places (data/places.json) are used as the subject wherever
+// possible, so the assertions cover exactly what the importer writes. Nothing
+// here mutates imported rows; rows created by the tests are namespaced under the
 // "test-" prefix and removed in afterAll.
 
 import { prisma } from '@/lib/db/prisma';
@@ -52,16 +52,16 @@ const WIDE_RADIUS_METERS = 250000;
 /** The service layer's documented maximum search radius. */
 const SERVICE_MAX_RADIUS_METERS = 50000;
 
-/** Slugs written by prisma/seed.ts. */
+/** Slugs of the real imported places (data/places.json). */
 const SEEDED_SLUGS = [
-  'nandi-hills-demo',
-  'skandagiri-night-trek-demo',
-  'chunchi-falls-demo',
-  'savandurga-hill-demo',
-  'makalidurga-trek-demo',
-  'anthargange-demo',
-  'ramanagara-ramadevara-betta-demo',
-  'devarayanadurga-demo',
+  'nandi-hills',
+  'skandagiri',
+  'chunchi-falls',
+  'savandurga-hill',
+  'makalidurga',
+  'anthargange',
+  'ramadevara-betta',
+  'devarayanadurga',
 ] as const;
 
 /** Rows these tests create. Always cleaned up. */
@@ -72,12 +72,23 @@ const created: string[] = [];
 // "no LAKE is publicly visible"), which a fixture orphaned by an interrupted
 // run would otherwise invalidate.
 beforeAll(async () => {
+  await prisma.$connect();
   await purgeTestPlaces();
 });
 
 afterAll(async () => {
   await deleteTestPlaces(created);
-  await prisma.$disconnect();
+  // Reconnect so subsequent test files sharing this singleton can use it.
+  await prisma.$connect();
+});
+
+describe('Prisma client lifecycle', () => {
+  it('remains connected after disconnect-reconnect cycle', async () => {
+    await prisma.$disconnect();
+    await prisma.$connect();
+    const count = await prisma.place.count();
+    expect(count).toBeGreaterThan(0);
+  });
 });
 
 describe('repository layer against the live database', () => {
@@ -103,7 +114,7 @@ describe('repository layer against the live database', () => {
         if (!place) continue;
 
         expect(place.slug).toBe(slug);
-        // The seed always writes a description for its demo places.
+        // The importer always writes a description for real places.
         expect(place.description).not.toBeNull();
         expect(typeof place.description).toBe('string');
         // Sources and photos are 1-to-many; both must be arrays, never undefined.
@@ -655,8 +666,7 @@ describe('repository layer against the live database', () => {
       const names = result.data.map((p) => p.name);
       expect(names).toEqual([...names].sort());
 
-      // The seeded pairs share a base name ("Nandi Hills" / "Nandi Hills
-      // (DEMO)"), so walk pages to prove no row is repeated or dropped.
+      // Walk pages to prove no row is repeated or dropped.
       const walked: string[] = [];
       for (let offset = 0; offset <= result.pagination.count; offset += 2) {
         const page = await findPlacesInBounds({ ...params, limit: 2, offset });

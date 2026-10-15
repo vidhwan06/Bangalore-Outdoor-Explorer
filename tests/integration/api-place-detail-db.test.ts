@@ -48,16 +48,16 @@ jest.mock('@/lib/security', () => {
   };
 });
 
-/** Slugs written by prisma/seed.ts. */
+/** Slugs of the real imported places (data/places.json). */
 const SEEDED_SLUGS = [
-  'nandi-hills-demo',
-  'skandagiri-night-trek-demo',
-  'chunchi-falls-demo',
-  'savandurga-hill-demo',
-  'makalidurga-trek-demo',
-  'anthargange-demo',
-  'ramanagara-ramadevara-betta-demo',
-  'devarayanadurga-demo',
+  'nandi-hills',
+  'skandagiri',
+  'chunchi-falls',
+  'savandurga-hill',
+  'makalidurga',
+  'anthargange',
+  'ramadevara-betta',
+  'devarayanadurga',
 ] as const;
 
 const created: string[] = [];
@@ -65,12 +65,14 @@ const created: string[] = [];
 // A leftover hidden place from an interrupted run would turn an expected 404
 // into a 200, so every run starts from a clean slate.
 beforeAll(async () => {
+  await prisma.$connect();
   await purgeTestPlaces();
 });
 
 afterAll(async () => {
   await deleteTestPlaces(created);
-  await prisma.$disconnect();
+  // Reconnect so subsequent test files sharing this singleton can use it.
+  await prisma.$connect();
 });
 
 /** Invokes the route handler for a slug, as Next.js would. */
@@ -102,12 +104,12 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('returns the description the seed wrote', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       const raw = await prisma.$queryRawUnsafe<{ description: string }[]>(
         `SELECT description FROM "Place" WHERE slug = $1`,
-        'nandi-hills-demo'
+        'nandi-hills'
       );
 
       expect(body.data.description).toBe(raw[0].description);
@@ -115,13 +117,13 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('returns coordinates on the correct axis, matching the database', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       const raw = await prisma.$queryRawUnsafe<{ lat: number; lng: number }[]>(
         `SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
            FROM "Place" WHERE slug = $1`,
-        'nandi-hills-demo'
+        'nandi-hills'
       );
 
       expect(body.data.latitude).toBeCloseTo(raw[0].lat, 9);
@@ -134,7 +136,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('returns enum and trust fields unchanged from the database', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       const raw = await prisma.$queryRawUnsafe<
@@ -153,7 +155,7 @@ describe('GET /api/places/[slug] (real database)', () => {
         `SELECT category::text, status::text, "trustLevel"::text, "visibilityLevel"::text,
                 "trustScore", "permitRequired", "hasParking", "hasWater", "hasNetwork"
            FROM "Place" WHERE slug = $1`,
-        'nandi-hills-demo'
+        'nandi-hills'
       );
 
       expect(body.data.category).toBe(raw[0].category);
@@ -168,7 +170,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('always returns sources and photos as arrays, never null', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       expect(Array.isArray(body.data.sources)).toBe(true);
@@ -179,7 +181,7 @@ describe('GET /api/places/[slug] (real database)', () => {
       const total = await prisma.placePhoto.count();
       expect(total).toBe(0);
 
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       expect(body.data.photos).toEqual([]);
@@ -188,7 +190,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('reports distanceMeters as 0, matching the single-place repository contract', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       // No reference point exists for a detail lookup, so this is a constant 0
@@ -197,7 +199,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('sets rate-limit headers on a successful response', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const headers = headersOf(response);
 
       expect(headers['x-ratelimit-limit']).toBeDefined();
@@ -352,7 +354,7 @@ describe('GET /api/places/[slug] (real database)', () => {
 
   describe('6. response contract', () => {
     it('matches placeDetailResponseSchema for a seeded place', async () => {
-      const response = await requestDetail('chunchi-falls-demo');
+      const response = await requestDetail('chunchi-falls');
       const body = await response.json();
 
       const parsed = placeDetailResponseSchema.safeParse(body);
@@ -362,7 +364,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('extends the list contract, so shared fields keep identical types', async () => {
-      const response = await requestDetail('chunchi-falls-demo');
+      const response = await requestDetail('chunchi-falls');
       const body = await response.json();
 
       // The detail payload must satisfy the list schema too — it is a superset.
@@ -370,7 +372,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('exposes exactly the documented field set', async () => {
-      const response = await requestDetail('chunchi-falls-demo');
+      const response = await requestDetail('chunchi-falls');
       const body = await response.json();
 
       expect(Object.keys(body.data).sort()).toEqual(
@@ -425,7 +427,7 @@ describe('GET /api/places/[slug] (real database)', () => {
     });
 
     it('is JSON-serialisable with no BigInt or Date instances', async () => {
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
 
       // A BigInt in the payload would throw during serialisation inside the
       // route, so a successful response proves the raw rows are plain JSON.
@@ -435,8 +437,8 @@ describe('GET /api/places/[slug] (real database)', () => {
 
     it('agrees with findPlaceBySlug, proving no query was duplicated', async () => {
       const { findPlaceBySlug } = await import('@/features/places/repositories');
-      const direct = await findPlaceBySlug('anthargange-demo');
-      const response = await requestDetail('anthargange-demo');
+      const direct = await findPlaceBySlug('anthargange');
+      const response = await requestDetail('anthargange');
       const body = await response.json();
 
       expect(body.data).toEqual(direct);
@@ -497,7 +499,7 @@ describe('GET /api/places/[slug] (real database)', () => {
         .mockRejectedValue(new Error('relation "Place" does not exist'));
 
       try {
-        const response = await requestDetail('nandi-hills-demo');
+        const response = await requestDetail('nandi-hills');
         const raw = await response.text();
 
         expect(response.status).toBe(500);
@@ -531,7 +533,7 @@ describe('GET /api/places/[slug] (real database)', () => {
         },
       });
 
-      const response = await requestDetail('nandi-hills-demo');
+      const response = await requestDetail('nandi-hills');
       const body = await response.json();
 
       expect(response.status).toBe(429);
@@ -555,7 +557,7 @@ describe('GET /api/places/[slug] (real database)', () => {
       });
 
       try {
-        const response = await requestDetail('nandi-hills-demo');
+        const response = await requestDetail('nandi-hills');
         expect(response.status).toBe(429);
         expect(spy).not.toHaveBeenCalled();
       } finally {
@@ -567,7 +569,7 @@ describe('GET /api/places/[slug] (real database)', () => {
   describe('client contract helpers', () => {
     it('builds an encoded detail URL', () => {
       expect(PLACE_DETAIL_ENDPOINT).toBe('/api/places');
-      expect(buildPlaceDetailUrl('nandi-hills-demo')).toBe('/api/places/nandi-hills-demo');
+      expect(buildPlaceDetailUrl('nandi-hills')).toBe('/api/places/nandi-hills');
       expect(buildPlaceDetailUrl('a slug')).toBe('/api/places/a%20slug');
       expect(buildPlaceDetailUrl('a/b')).toBe('/api/places/a%2Fb');
     });

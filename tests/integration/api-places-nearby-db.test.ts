@@ -9,7 +9,7 @@
 // actual exported GET handlers, so validation, service wiring, the repository's
 // PostGIS query and the response contract are all exercised end to end.
 //
-// Seeded demo data (slugs ending "-demo") is used as the subject. Rows created
+// Real imported places (data/places.json) are used as the subject. Rows created
 // here are namespaced under "test-" and removed in afterAll.
 
 import { NextRequest } from 'next/server';
@@ -58,21 +58,21 @@ const BENGALURU = { lat: 12.9716, lng: 77.5946 } as const;
 /** The service layer's documented maximum search radius. */
 const MAX_RADIUS_METERS = 50000;
 
-/** A seeded place far enough out to be excluded at the service's radius cap. */
-const SEEDED_BEYOND_SERVICE_MAX = 'chunchi-falls-demo';
+/** A real place far enough out to be excluded at the service's radius cap. */
+const SEEDED_BEYOND_SERVICE_MAX = 'chunchi-falls';
 
-/** A seeded place comfortably inside the cap. */
-const SEEDED_WITHIN_SERVICE_MAX = 'nandi-hills-demo';
+/** A real place comfortably inside the cap. */
+const SEEDED_WITHIN_SERVICE_MAX = 'nandi-hills';
 
 const SEEDED_SLUGS = [
-  'nandi-hills-demo',
-  'skandagiri-night-trek-demo',
-  'savandurga-hill-demo',
-  'makalidurga-trek-demo',
-  'ramanagara-ramadevara-betta-demo',
-  'devarayanadurga-demo',
-  'anthargange-demo',
-  'chunchi-falls-demo',
+  'nandi-hills',
+  'skandagiri',
+  'savandurga-hill',
+  'makalidurga',
+  'ramadevara-betta',
+  'devarayanadurga',
+  'anthargange',
+  'chunchi-falls',
 ] as const;
 
 const created: string[] = [];
@@ -80,12 +80,14 @@ const created: string[] = [];
 // The page-walk assertions depend on the result set staying fixed between
 // requests, so any fixture orphaned by an interrupted run must go first.
 beforeAll(async () => {
+  await prisma.$connect();
   await purgeTestPlaces();
 });
 
 afterAll(async () => {
   await deleteTestPlaces(created);
-  await prisma.$disconnect();
+  // Reconnect so subsequent test files sharing this singleton can use it.
+  await prisma.$connect();
 });
 
 function makeRequest(path: string, query: Record<string, string | number>): NextRequest {

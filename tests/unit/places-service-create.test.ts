@@ -7,6 +7,7 @@ import { placeCreateSchema } from '@/lib/validation/schemas';
 // Mock the repository
 jest.mock('@/features/places/repositories', () => ({
   createPlace: jest.fn(),
+  upsertPlace: jest.fn(),
   findNearbyPlaces: jest.fn(),
   findPlacesInBounds: jest.fn(),
   findPlaceById: jest.fn(),
@@ -14,7 +15,7 @@ jest.mock('@/features/places/repositories', () => ({
   getCategoryCounts: jest.fn(),
 }));
 
-import { createPlace } from '@/features/places/repositories';
+import { createPlace, upsertPlace } from '@/features/places/repositories';
 
 const mockCreatePlace = createPlace as jest.MockedFunction<typeof createPlace>;
 
@@ -235,6 +236,80 @@ describe('Place Service - createPlace', () => {
         trailDistanceKm: 5,
       })
     );
+  });
+});
+
+describe('Place Service - upsertPlace', () => {
+  const mockUpsertPlace = upsertPlace as jest.MockedFunction<typeof upsertPlace>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const validInput = {
+    name: 'Service Test Peak',
+    category: 'TREK' as const,
+    latitude: 13.0,
+    longitude: 77.5,
+  };
+
+  const mockPlaceResult = {
+    id: 'place-1',
+    name: 'Service Test Peak',
+    slug: 'service-test-peak',
+    category: 'TREK' as const,
+    shortDescription: null,
+    latitude: 13.0,
+    longitude: 77.5,
+    distanceMeters: 0,
+    difficulty: null,
+    status: 'UNVERIFIED' as const,
+    trustLevel: 'COMMUNITY_SUBMITTED' as const,
+    visibilityLevel: 'PUBLIC_EXACT' as const,
+    trustScore: 0,
+    hasParking: false,
+    hasWater: false,
+    hasNetwork: false,
+    permitRequired: false,
+    trailDistanceKm: null,
+    primaryPhotoUrl: null,
+  };
+
+  it('passes userId as createdById to the repository', async () => {
+    mockUpsertPlace.mockResolvedValue({ place: mockPlaceResult, created: true });
+
+    await placeService.upsertPlace(validInput, 'user-456');
+
+    expect(mockUpsertPlace).toHaveBeenCalledWith(
+      expect.objectContaining({ createdById: 'user-456' })
+    );
+  });
+
+  it('passes undefined as createdById when no userId is provided', async () => {
+    mockUpsertPlace.mockResolvedValue({ place: mockPlaceResult, created: true });
+
+    await placeService.upsertPlace(validInput);
+
+    expect(mockUpsertPlace).toHaveBeenCalledWith(
+      expect.objectContaining({ createdById: undefined })
+    );
+  });
+
+  it('validates input using placeCreateSchema before calling repository', async () => {
+    await expect(
+      placeService.upsertPlace({ name: 'Test' } as any)
+    ).rejects.toThrow();
+
+    expect(mockUpsertPlace).not.toHaveBeenCalled();
+  });
+
+  it('returns the repository result with place and created flag', async () => {
+    mockUpsertPlace.mockResolvedValue({ place: mockPlaceResult, created: false });
+
+    const result = await placeService.upsertPlace(validInput, 'user-789');
+
+    expect(result.place.slug).toBe('service-test-peak');
+    expect(result.created).toBe(false);
   });
 });
 
